@@ -6,10 +6,13 @@
 	<artifactId>graphql-builder</artifactId>
 	<version>0.0.1</version>
 
-
-
-	<properties>
-	</properties>
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub OWNER Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/fleetpin/mavenrepository</url>
+		</repository>
+	</distributionManagement>
 
 	<build>
 		<plugins>
