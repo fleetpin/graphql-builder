@@ -27,6 +27,7 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,8 +38,8 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.fleetpin.graphql.builder.TypeMeta.Flag;
 import com.fleetpin.graphql.builder.annotations.Context;
 import com.fleetpin.graphql.builder.annotations.Directive;
-import com.fleetpin.graphql.builder.annotations.Graph;
-import com.fleetpin.graphql.builder.annotations.GraphIgnore;
+import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
 import com.fleetpin.graphql.builder.annotations.Id;
 import com.fleetpin.graphql.builder.annotations.InputIgnore;
 import com.fleetpin.graphql.builder.annotations.Mutation;
@@ -88,7 +89,7 @@ public class SchemaBuilder {
 	private static final GraphQLScalarType DURATION_SCALAR = GraphQLScalarType.newScalar().name("Duration").coercing(new DurationCoercing()).build();
 	private static final GraphQLScalarType ZONE_ID_SCALAR = GraphQLScalarType.newScalar().name("Timezone").coercing(new ZoneIdCoercing()).build();
 
-	public static graphql.GraphQL.Builder build(DirectivesSchema diretives, AuthorizerSchema authorizer, Set<Class<?>> types, Set<Class<?>> scalars, Set<Method> endPoints) throws ReflectiveOperationException {
+	private static graphql.GraphQL.Builder build(DirectivesSchema diretives, AuthorizerSchema authorizer, Set<Class<?>> types, Set<Class<?>> scalars, Set<Method> endPoints) throws ReflectiveOperationException {
 		Builder graphQuery = GraphQLObjectType.newObject();
 		graphQuery.name("Query");
 		Builder graphMutations = GraphQLObjectType.newObject();
@@ -168,7 +169,7 @@ public class SchemaBuilder {
 				Object[] enums = type.getEnumConstants();
 				for(Object e: enums) {
 					Enum a = (Enum) e;
-					if(type.getDeclaredField(e.toString()).isAnnotationPresent(GraphIgnore.class)) {
+					if(type.getDeclaredField(e.toString()).isAnnotationPresent(GraphQLIgnore.class)) {
 						continue;
 					}
 					enumType.value(a.name(), a);
@@ -181,7 +182,7 @@ public class SchemaBuilder {
 			}
 			
 			SchemaOption schemaType = SchemaOption.BOTH;
-			Graph graphTypeAnnotation = type.getAnnotation(Graph.class);
+			Entity graphTypeAnnotation = type.getAnnotation(Entity.class);
 			if(graphTypeAnnotation != null) {
 				schemaType = graphTypeAnnotation.value();
 			}
@@ -218,7 +219,7 @@ public class SchemaBuilder {
 				if(method.getDeclaringClass().equals(Object.class)) {
 					continue;
 				}
-				if(method.isAnnotationPresent(GraphIgnore.class)) {
+				if(method.isAnnotationPresent(GraphQLIgnore.class)) {
 					continue;
 				}
 				//will also be on implementing class
@@ -278,7 +279,7 @@ public class SchemaBuilder {
 			}
 			Class<?> parent = type.getSuperclass();
 			while(parent != null) {
-				if(parent.isAnnotationPresent(Graph.class)) {
+				if(parent.isAnnotationPresent(Entity.class)) {
 					String interfaceName = getName(parent);
 					graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
 					break;
@@ -375,9 +376,16 @@ public class SchemaBuilder {
 								if(obj == null) {
 									args[i] = Optional.empty();
 								}else {
-									Class<?> genericType = extraOptionalType(method.getGenericParameterTypes()[i]);
 									
-									args[i] = Optional.of(MAPPER.convertValue(obj, genericType));
+									var genericType = method.getGenericParameterTypes()[i];
+									var t = ((ParameterizedType) genericType).getActualTypeArguments()[0];
+									
+									args[i] = Optional.of(MAPPER.convertValue(obj, new TypeReference() {
+										@Override
+										public Type getType() {
+											return t;
+										}
+									}));
 								}
 							}else {
 								args[i] = MAPPER.convertValue(obj, method.getParameters()[i].getType());	
@@ -490,7 +498,7 @@ public class SchemaBuilder {
 			return GraphQLTypeReference.typeRef(getName(type));
 		}
 		
-		if(type.isAnnotationPresent(Graph.class)) {
+		if(type.isAnnotationPresent(Entity.class)) {
 			return GraphQLTypeReference.typeRef(getName(type));
 		}
 		
@@ -578,8 +586,8 @@ public class SchemaBuilder {
 		}
 		
 		
-		if(type.isAnnotationPresent(Graph.class)) {
-			if(type.getAnnotation(Graph.class).value() == SchemaOption.BOTH) {
+		if(type.isAnnotationPresent(Entity.class)) {
+			if(type.getAnnotation(Entity.class).value() == SchemaOption.BOTH) {
 				return GraphQLTypeReference.typeRef(getName(type) + "Input");
 			}else {
 				return GraphQLTypeReference.typeRef(getName(type));
@@ -616,7 +624,7 @@ public class SchemaBuilder {
 		
 		DirectivesSchema diretivesSchema = DirectivesSchema.build(globalRestricts, dierctivesTypes);
 		
-		Set<Class<?>> types = reflections.getTypesAnnotatedWith(Graph.class);
+		Set<Class<?>> types = reflections.getTypesAnnotatedWith(Entity.class);
 		
 		Set<Class<?>> scalars = reflections.getTypesAnnotatedWith(Scalar.class);
 		
@@ -628,7 +636,7 @@ public class SchemaBuilder {
 		endPoints.addAll(subscriptions);
 		endPoints.addAll(queries);
 		
-		types.removeIf(t -> t.getDeclaredAnnotation(Graph.class) == null);
+		types.removeIf(t -> t.getDeclaredAnnotation(Entity.class) == null);
 		types.removeIf(t -> t.isAnonymousClass());
 		scalars.removeIf(t -> t.isAnonymousClass());
 		

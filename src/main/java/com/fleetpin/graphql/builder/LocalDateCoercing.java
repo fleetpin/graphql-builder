@@ -1,7 +1,6 @@
 package com.fleetpin.graphql.builder;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;

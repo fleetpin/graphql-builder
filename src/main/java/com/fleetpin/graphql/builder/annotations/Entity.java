@@ -7,8 +7,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 @Retention(RUNTIME)
-@Target({ElementType.METHOD, ElementType.FIELD})
-public @interface GraphIgnore {
-
+@Target(ElementType.TYPE)
+public @interface Entity {
+	SchemaOption value() default SchemaOption.TYPE;
 
 }
