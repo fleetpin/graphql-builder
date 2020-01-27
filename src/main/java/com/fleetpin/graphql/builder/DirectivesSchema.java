@@ -126,14 +126,8 @@ public class DirectivesSchema {
 			return restrict.filter((List)response);
 		}else if(response instanceof Publisher) {
 			return CompletableFuture.completedFuture(Flowable.fromPublisher((Publisher) response).flatMap(entry -> {
-				return Flowable.fromFuture(restrict.allow(entry).thenApply(allow -> {
-					if(allow == Boolean.TRUE) {
-						return entry;
-					}else{
-						return null;
-					}
-				}));
-			}).filter(Objects::nonNull));
+				return Flowable.fromCompletionStage(restrict.allow(entry)).filter(t -> t == Boolean.TRUE).map(t -> entry);
+			}));
 		}else if(response instanceof Optional) {
 			var optional = (Optional) response;
 			if(optional.isEmpty()) {
