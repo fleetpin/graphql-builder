@@ -4,7 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.fleetpin</groupId>
 	<artifactId>graphql-builder</artifactId>
-	<version>0.0.3</version>
+	<version>0.0.4</version>
+
+	<properties>
+		<junit.jupiter.version>5.4.2</junit.jupiter.version>
+	</properties>
 
 	<distributionManagement>
 		<repository>
@@ -67,6 +71,13 @@
 			<groupId>io.reactivex.rxjava3</groupId>
 			<artifactId>rxjava</artifactId>
 			<version>3.0.0-RC7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${junit.jupiter.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

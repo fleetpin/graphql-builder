@@ -28,6 +28,7 @@ import org.reflections.scanners.TypeAnnotationsScanner;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -375,19 +376,14 @@ public class SchemaBuilder {
 								if(obj == null) {
 									args[i] = Optional.empty();
 								}else {
-									Class<?> genericType = extraOptionalType(method.getGenericParameterTypes()[i]);
-									
-									args[i] = Optional.of(MAPPER.convertValue(obj, genericType));
-									
-//									var genericType = method.getGenericParameterTypes()[i];
-//									var t = ((ParameterizedType) genericType).getActualTypeArguments()[0];
-//									
-//									args[i] = Optional.of(MAPPER.convertValue(obj, new TypeReference() {
-//										@Override
-//										public Type getType() {
-//											return t;
-//										}
-//									}));
+									var genericType = method.getGenericParameterTypes()[i];
+									var t = ((ParameterizedType) genericType).getActualTypeArguments()[0];
+									args[i] = Optional.of(MAPPER.convertValue(obj, new TypeReference<Object>() {
+										@Override
+										public Type getType() {
+											return t;
+										}
+									}));
 								}
 							}else {
 								args[i] = MAPPER.convertValue(obj, method.getParameters()[i].getType());	

@@ -56,6 +56,9 @@ public class AuthorizerSchema {
 
 	public DataFetcher<?> wrap(DataFetcher<?> fetcher, Method method) {
 		Authorizer wrapper = getAuthorizer(method.getDeclaringClass());
+		if(wrapper == null) {
+			return fetcher; 
+		}
 		Set<String> parameterNames = new HashSet<>();
 		
 		for(var parameter: method.getParameters()) {
