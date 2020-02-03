@@ -4,7 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.fleetpin</groupId>
 	<artifactId>graphql-builder</artifactId>
-	<version>0.0.4</version>
+	<version>0.0.5</version>
+
+	<name>GraphQL Builder</name>
+	<description>Builds a graphql schema from a model using reflection</description>
+	<url>https://github.com/fleetpin/graphql-builder</url>
 
 	<properties>
 		<junit.jupiter.version>5.4.2</junit.jupiter.version>
@@ -17,6 +21,18 @@
 			<url>https://maven.pkg.github.com/fleetpin/mavenrepository</url>
 		</repository>
 	</distributionManagement>
+
+	<scm>
+		<url>https://github.com/fleetpin/graphql-builder</url>
+	</scm>
+
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<build>
 		<plugins>

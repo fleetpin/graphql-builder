@@ -1,3 +1,4 @@
+//REMOVE ONCE PULL REQUEST MERGED
 package graphql.execution.reactive;
 
 import java.util.concurrent.CompletionStage;
@@ -33,10 +34,10 @@ public class CompletionStageMappingPublisher<D, U> implements Publisher<D> {
     @Override
     public void subscribe(Subscriber<? super D> downstreamSubscriber) {
         upstreamPublisher.subscribe(new Subscriber<U>() {
-        	
-        	private final AtomicInteger inFlight = new AtomicInteger();
+            
+            private final AtomicInteger inFlight = new AtomicInteger();
             private volatile Runnable finish;
-        	
+            
             Subscription delegatingSubscription;
 
             @Override
@@ -52,19 +53,19 @@ public class CompletionStageMappingPublisher<D, U> implements Publisher<D> {
                     completionStage = mapper.apply(u);
                     inFlight.getAndIncrement();
                     completionStage.whenComplete((d, throwable) -> {
-                    	try {
+                        try {
                             if (throwable != null) {
                                 handleThrowable(throwable);
                             } else {
                                 downstreamSubscriber.onNext(d);
                             }
-                    	}finally {
-                           	if(inFlight.intValue() == 1 && finish != null) {
-                        		finish.run();
-                        		finish = null;
-                        	}
-                           	inFlight.decrementAndGet();
-						}
+                        }finally {
+                               if(inFlight.intValue() == 1 && finish != null) {
+                                finish.run();
+                                finish = null;
+                            }
+                               inFlight.decrementAndGet();
+                        }
                     });
                 } catch (RuntimeException throwable) {
                     handleThrowable(throwable);
@@ -85,28 +86,28 @@ public class CompletionStageMappingPublisher<D, U> implements Publisher<D> {
 
             @Override
             public void onError(Throwable t) {
-            	if(inFlight.intValue() > 0) {
-            		finish = () -> downstreamSubscriber.onError(t);
-            		if(inFlight.intValue() == 0 && finish != null) {
-            			//happened together
-                		downstreamSubscriber.onError(t);
-            		}
-            	}else {
-            		downstreamSubscriber.onError(t);
-            	}
+                if(inFlight.intValue() > 0) {
+                    finish = () -> downstreamSubscriber.onError(t);
+                    if(inFlight.intValue() == 0 && finish != null) {
+                        //happened together
+                        downstreamSubscriber.onError(t);
+                    }
+                }else {
+                    downstreamSubscriber.onError(t);
+                }
             }
 
             @Override
             public void onComplete() {
-            	if(inFlight.intValue() > 0) {
-            		finish = () -> downstreamSubscriber.onComplete();
-            		if(inFlight.intValue() == 0 && finish != null) {
-            			//happened together
-                		downstreamSubscriber.onComplete();
-            		}
-            	}else {
-            		downstreamSubscriber.onComplete();
-            	}
+                if(inFlight.intValue() > 0) {
+                    finish = () -> downstreamSubscriber.onComplete();
+                    if(inFlight.intValue() == 0 && finish != null) {
+                        //happened together
+                        downstreamSubscriber.onComplete();
+                    }
+                }else {
+                    downstreamSubscriber.onComplete();
+                }
             }
         });
     }
