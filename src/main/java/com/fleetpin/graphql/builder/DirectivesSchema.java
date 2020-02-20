@@ -1,3 +1,5 @@
+package com.fleetpin.graphql.builder;
+
 /*
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -10,18 +12,16 @@
  * the License.
  */
 
-package com.fleetpin.graphql.builder;
+
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -29,13 +29,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import org.dataloader.BatchLoader;
-import org.dataloader.DataLoader;
-import org.dataloader.DataLoaderOptions;
 import org.reactivestreams.Publisher;
 
 import com.fleetpin.graphql.builder.annotations.Directive;
 import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -86,9 +86,16 @@ public class DirectivesSchema {
 		};
 	}
 	private DataFetcher<?> wrap(RestrictTypeFactory<?> directive, DataFetcher<?> fetcher) {
+		//hate having this cache here would love to scope against the env object but nothing to hook into dataload caused global leak
+		LoadingCache<DataFetchingEnvironment, CompletableFuture<RestrictType>> cache = CacheBuilder.newBuilder().weakKeys().build(new CacheLoader<DataFetchingEnvironment, CompletableFuture<RestrictType>>() {
+
+			@Override
+			public CompletableFuture<RestrictType> load(DataFetchingEnvironment key) throws Exception {
+				return directive.create(key).thenApply(t -> t); //annoying generics headaches going on here
+			}
+		});
 		return env -> {
-			DataLoader<DataFetchingEnvironment, RestrictType<?>> dataloader = env.getDataLoaderRegistry().computeIfAbsent(directive.toString(), t -> new DataLoader<DataFetchingEnvironment, RestrictType<?>>(new RestrictLoader(directive), DataLoaderOptions.newOptions().setBatchingEnabled(false)));
-			return dataloader.load(env).thenCompose(restrict -> {
+			return cache.getUnchecked(env).thenCompose(restrict -> {
 				try {
 					Object response = fetcher.get(env);
 					if(response instanceof CompletionStage) {
@@ -133,7 +140,7 @@ public class DirectivesSchema {
 		return fetcher;
 	}
 	
-	private CompletableFuture<Object> applyRestrict(RestrictType restrict, Object response) {
+	private <T> CompletableFuture<Object> applyRestrict(RestrictType restrict, Object response) {
 		if(response instanceof List) {
 			return restrict.filter((List)response);
 		}else if(response instanceof Publisher) {
@@ -161,25 +168,6 @@ public class DirectivesSchema {
 				}
 			});
 		}
-	}
-	
-	private static class RestrictLoader<T> implements BatchLoader<DataFetchingEnvironment, RestrictType<T>> {
-
-		private final RestrictTypeFactory<T> directive;
-
-		public RestrictLoader(RestrictTypeFactory<T> directive) {
-			this.directive = directive;
-		}
-
-		@Override
-		public CompletionStage<List<RestrictType<T>>> load(List<DataFetchingEnvironment> keys) {
-			List<CompletableFuture<RestrictType<T>>> toReturn = new ArrayList<>(keys.size());
-			for(var key: keys) {
-				toReturn.add(directive.create(key));
-			}
-			return all(toReturn);
-		}
-		
 	}
 	
 	private static <T> CompletableFuture<List<T>> all(List<CompletableFuture<T>> toReturn) {

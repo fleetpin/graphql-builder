@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.fleetpin</groupId>
 	<artifactId>graphql-builder</artifactId>
-	<version>0.0.5</version>
+	<version>0.1.2</version>
 
 	<name>GraphQL Builder</name>
 	<description>Builds a graphql schema from a model using reflection</description>
@@ -12,18 +12,26 @@
 
 	<properties>
 		<junit.jupiter.version>5.4.2</junit.jupiter.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
 	<distributionManagement>
+		<snapshotRepository>
+			<id>sonatype</id>
+			<name>central snapshot</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
 		<repository>
-			<id>github</id>
-			<name>GitHub OWNER Apache Maven Packages</name>
-			<url>https://maven.pkg.github.com/fleetpin/mavenrepository</url>
+			<id>sonatype</id>
+			<name>central release</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
 		</repository>
 	</distributionManagement>
 
 	<scm>
 		<url>https://github.com/fleetpin/graphql-builder</url>
+		<connection>scm:git:https://github.com/fleetpin/graphql-builder.git</connection>
+		<developerConnection>scm:git:https://github.com/fleetpin/graphql-builder.git</developerConnection>
 	</scm>
 
 	<licenses>
@@ -33,6 +41,15 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
+
+	<developers>
+		<developer>
+			<name>Ashley Taylor</name>
+			<email>ashley.taylor@fleetpin.co.nz</email>
+			<organization>Fleetpin</organization>
+			<organizationUrl>http://www.fleetpin.co.nz</organizationUrl>
+		</developer>
+	</developers>
 
 	<build>
 		<plugins>
@@ -44,6 +61,50 @@
 					<target>11</target>
 					<compilerArgument>-parameters</compilerArgument>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>2.5.3</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.1.1</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.6</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -96,4 +157,5 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
 </project>
