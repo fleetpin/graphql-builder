@@ -1,11 +1,14 @@
 # graphql-builder
 Builds a graphql schema from a model using reflection.
 It reads parameter and method names of the java classes to build the schema.
-It requires java11 and `-parameters` compile argument. This allows method argument names to be read via reflection preventing annotations per argument.
+It requires java11 and `-parameters` compile argument. This allows method argument names to be read removing the need for an annotations per argument.
 This aproach means your method / argument names are limmited to valid java names.
-
+This library is also designed with fine grained security requirements in mind.
 
 An example using this library can be found [here](https://github.com/ashley-taylor/graphql-aws-lamba-example)
+
+
+
 
 
 ## Getting Started
@@ -44,7 +47,7 @@ type User {
 ```
 ### Input entity
 
-To create an input entity specify input on the `@Entity` annotaion you can also specify `both` the input entity will sufixed with `Input`
+To create an input entity specify input on the `@Entity` annotaion you can also specify `both` the input entity in this case will sufixed with `Input`
 
 ```java
 @Entity(SchemaOption.INPUT)
@@ -72,7 +75,7 @@ input User {
 ```
 
 ## Optional vs Required
-by default using this library all fields are required. If you want something to be optional wrap it with Optional<type>. It is done this way since optional is a type built into the JDK with existing support.
+by default using this library all fields are required. If you want something to be optional wrap it with `Optional<type>`. It is done this way since `Optional` is part of the JDK can has good 3rd party integration.
   ```java
 @Entity
 public class User {
@@ -122,8 +125,11 @@ public CompletableFuture<Address> getAddress(ApiContext context) {
 }
 ```
 
+## DataFetchingEnvironment
+To have access to the `DataFetchingEnvironment` object just add it as an argument and it will be passed in
+
 ## Query
-To perform a query you add the `@Query` annotation to a static method. It does not need to be on the matching type
+To perform a query you add the `@Query` annotation to a static method. It does not need to be on the matching type static method with the package will be scanned.
 
 ```java
 @Query
@@ -157,7 +163,7 @@ extend type Mutation {
 ```
 
 ## Subscriptions
-very similar to query add `@Subscription` and method must return a `Publisher` type
+very similar to query add `@Subscription` and method must return a reactive `Publisher`
 
 ```java
 @Subscription
@@ -174,7 +180,7 @@ extend type Subscription {
 ```
 
 ## Inheritance
-To create an inheritance object you can use `interface` or `abstract class` you also need to add the `@Entity` annotation to the parent as well
+To create an inheritance type you can use `interface` or `abstract class` you need to add the `@Entity` annotation to the parent as well. Without that annotation inherited methods will be directly added to the type
 
 ```java
 @Entity
@@ -253,7 +259,7 @@ enum Animal {
 
 
 ## Package Authorizer
-The base package requires an Authorizer. This is a call that will determine if an endpoint is accessable. This will also flow down to child packages.
+The base package requires an Authorizer. This is a call that will determine if an endpoint is accessable. This will also be used by child packages unless they have also defined an Authorizer.
 
 This is designed for things like organisation access
 
@@ -277,9 +283,13 @@ public class UserAuthorizer implements Authorizer {
 ```
 
 ## Entity type restrictions
-If you have a permissions matrix that needs implemented this feature makes this easy.
-The methods will still return the objects and then be filtered in the graphql library.
-This means where ever that object is returned it will apply the security model
+If you have a permissions matrix that needs implemented this makes this easy.
+It will validate all entries before returning them from the query.
+Any that do not pass will be removed from the array or replaced with null.
+This can lead to an error if the type is not optional.
+
+Using this approach it allows you to write your data access layer without worrying about permissions.
+Return all matching entities from the method then have them automatically filter from everywhere in the application.
 
 To implement this you need to add an annotation to the class and implement the restriction factory 
 ```java
@@ -310,6 +320,7 @@ public class AssetRestrict implements RestrictType<Animal> {
 ## Directives
 These are similar to GraphQL directives but just implemented on the java model
 You define a custom annotation and add the `@Directive` to it
+This annotation in then passed into the DirectiveCaller allowing you to add options to the annotation if need be
 
 ```java
 @Retention(RUNTIME)
