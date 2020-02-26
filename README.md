@@ -8,6 +8,24 @@ This library is also designed with fine grained security requirements in mind.
 An example using this library can be found [here](https://github.com/ashley-taylor/graphql-aws-lamba-example)
 
 
+- [graphql-builder](#graphql-builder)
+  - [Getting Started](#getting-started)
+  - [Creating an Entity](#creating-an-entity)
+    - [type entity](#type-entity)
+    - [Input entity](#input-entity)
+  - [Optional vs Required](#optional-vs-required)
+  - [Context](#context)
+  - [DataFetchingEnvironment](#datafetchingenvironment)
+  - [Query](#query)
+  - [Mutation](#mutation)
+  - [Subscriptions](#subscriptions)
+  - [Inheritance](#inheritance)
+  - [Ignore method](#ignore-method)
+  - [Enum](#enum)
+  - [Package Authorizer](#package-authorizer)
+  - [Entity type restrictions](#entity-type-restrictions)
+  - [Directives](#directives)
+  - [Scalar](#scalar)
 
 
 
