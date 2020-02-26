@@ -336,3 +336,32 @@ public static CompletableFuture<List<User>> users(ApiContext context, @Id String
   return context.getDatabase().query(User.class);
 }
 ```
+
+## Scalar
+
+TO add a scalar you add the `@Scalar` Annotation this requires defining `Coercing` class
+
+```java
+
+@Scalar(Animal.CoercingImpl.class)
+public class Animal {
+  public static class CoercingImpl implements Coercing<Animal, Object> {
+
+    @Override
+    public Object serialize(Object dataFetcherResult) throws CoercingSerializeException {
+      return dataFetcherResult;
+    }
+
+    @Override
+     public Animal parseValue(Object input) throws CoercingParseValueException {
+      return null;
+    }
+
+    @Override
+    public Animal parseLiteral(Object input) throws CoercingParseLiteralException {
+      return null;
+    }
+
+  }
+}
+```
