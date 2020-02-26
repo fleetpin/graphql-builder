@@ -339,7 +339,7 @@ public static CompletableFuture<List<User>> users(ApiContext context, @Id String
 
 ## Scalar
 
-TO add a scalar you add the `@Scalar` Annotation this requires defining `Coercing` class
+To add a scalar you add the `@Scalar` Annotation this requires defining `Coercing` class
 
 ```java
 
