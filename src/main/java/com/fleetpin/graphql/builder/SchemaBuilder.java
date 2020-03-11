@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.MonthDay;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,6 +102,7 @@ public class SchemaBuilder {
 	private static final GraphQLScalarType DURATION_SCALAR = GraphQLScalarType.newScalar().name("Duration").coercing(new DurationCoercing()).build();
 	private static final GraphQLScalarType ZONE_ID_SCALAR = GraphQLScalarType.newScalar().name("Timezone").coercing(new ZoneIdCoercing()).build();
 	private static final GraphQLScalarType MONTH_DAY_SCALAR = GraphQLScalarType.newScalar().name("MonthDay").coercing(new MonthDayCoercing()).build();
+	private static final GraphQLScalarType YEAR_MONTH_SCALAR = GraphQLScalarType.newScalar().name("YearMonth").coercing(new YearMonthCoercing()).build();
 
 	
 	private static graphql.GraphQL.Builder build(DirectivesSchema diretives, AuthorizerSchema authorizer, Set<Class<?>> types, Set<Class<?>> scalars, Set<Method> endPoints) throws ReflectiveOperationException {
@@ -505,6 +507,8 @@ public class SchemaBuilder {
 			return DURATION_SCALAR;
 		}else if(type.equals(MonthDay.class)) {
 			return MONTH_DAY_SCALAR;
+		}else if(type.equals(YearMonth.class)) {
+			return YEAR_MONTH_SCALAR;
 		}
 		
 		
@@ -588,6 +592,8 @@ public class SchemaBuilder {
 			return DURATION_SCALAR;
 		}else if(type.equals(MonthDay.class)) {
 			return MONTH_DAY_SCALAR;
+		}else if(type.equals(YearMonth.class)) {
+			return YEAR_MONTH_SCALAR;
 		}
 
 		
