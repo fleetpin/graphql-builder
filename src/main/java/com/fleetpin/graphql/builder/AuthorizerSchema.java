@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import com.google.common.base.Throwables;
-
 import graphql.schema.DataFetcher;
 
 public class AuthorizerSchema {
@@ -182,7 +180,9 @@ public class AuthorizerSchema {
 								if(e.getCause() instanceof Exception) {
 									e = e.getCause();
 								}
-								Throwables.throwIfUnchecked(e);
+								if(e instanceof RuntimeException) {
+									throw (RuntimeException) e;
+								}
 								throw new RuntimeException(e);
 							}
 							if(r) {
@@ -192,7 +192,9 @@ public class AuthorizerSchema {
 									if(e1.getCause() instanceof Exception) {
 										e1 = e1.getCause();
 									}
-									Throwables.throwIfUnchecked(e1);
+									if(e1 instanceof RuntimeException) {
+										throw (RuntimeException) e1;
+									}
 									throw new RuntimeException(e1);
 								}				
 							}else {

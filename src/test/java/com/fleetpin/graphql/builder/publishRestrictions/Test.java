@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 
-import com.fleetpin.graphql.builder.PublishRestrictions;
 import com.fleetpin.graphql.builder.RestrictType;
 import com.fleetpin.graphql.builder.RestrictTypeFactory;
 import com.fleetpin.graphql.builder.annotations.Entity;
@@ -32,7 +31,6 @@ public class Test {
 	
 	@Subscription
 	public static Publisher<Test> test() {
-		System.out.println("hi");
 		return Flowable.just(new Test(false)).flatMap(f -> Flowable.fromCompletionStage(CompletableFuture.supplyAsync(() -> f, executor)));
 	}
 

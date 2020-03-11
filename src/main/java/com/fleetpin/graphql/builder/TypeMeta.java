@@ -48,8 +48,11 @@ public class TypeMeta {
 		if(Collection.class.isAssignableFrom(type)) {
 			flags.add(Flag.ARRAY);
 			genericType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
-			//TODO:cast failure possible??
-			process((Class<?>) genericType, null);
+			if(genericType instanceof ParameterizedType) {
+				process((Class<?>) ((ParameterizedType)genericType).getRawType(), genericType);
+			}else {
+				process((Class<?>) genericType, null);
+			}
 			return;
 		}
 		if(CompletableFuture.class.isAssignableFrom(type)) {

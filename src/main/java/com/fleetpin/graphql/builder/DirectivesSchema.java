@@ -19,11 +19,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -32,10 +34,6 @@ import java.util.stream.Collectors;
 import org.reactivestreams.Publisher;
 
 import com.fleetpin.graphql.builder.annotations.Directive;
-import com.google.common.base.Throwables;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -86,16 +84,12 @@ public class DirectivesSchema {
 		};
 	}
 	private DataFetcher<?> wrap(RestrictTypeFactory<?> directive, DataFetcher<?> fetcher) {
-		//hate having this cache here would love to scope against the env object but nothing to hook into dataload caused global leak
-		LoadingCache<DataFetchingEnvironment, CompletableFuture<RestrictType>> cache = CacheBuilder.newBuilder().weakKeys().build(new CacheLoader<DataFetchingEnvironment, CompletableFuture<RestrictType>>() {
-
-			@Override
-			public CompletableFuture<RestrictType> load(DataFetchingEnvironment key) throws Exception {
-				return directive.create(key).thenApply(t -> t); //annoying generics headaches going on here
-			}
-		});
+		//TODO: hate having this cache here would love to scope against the env object but nothing to hook into dataload caused global leak
+		Map<DataFetchingEnvironment, CompletableFuture<RestrictType>> cache = Collections.synchronizedMap(new WeakHashMap<>());
+		
+		
 		return env -> {
-			return cache.getUnchecked(env).thenCompose(restrict -> {
+			return cache.computeIfAbsent(env, key -> directive.create(key).thenApply(t -> t)).thenCompose(restrict -> {
 				try {
 					Object response = fetcher.get(env);
 					if(response instanceof CompletionStage) {
@@ -103,7 +97,9 @@ public class DirectivesSchema {
 					}
 					return applyRestrict(restrict, response);
 				} catch (Exception e) {
-					Throwables.throwIfUnchecked(e);
+					if(e instanceof RuntimeException) {
+						throw (RuntimeException) e;
+					}
 					throw new RuntimeException(e);
 				}
 			});
