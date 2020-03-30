@@ -39,10 +39,6 @@ jobs:
         
         access-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: ashley-taylor/junit-report-annotations-action@master
-      if: always()
-      with:
-        access-token: ${{ secrets.GITHUB_TOKEN }}
     - name: update deploy status
       uses: unacast/actions-github-deployment-status@0.2
       with:
