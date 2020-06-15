@@ -385,7 +385,16 @@ public class SchemaBuilder {
 					}else {
 						Object obj = env.getArgument(method.getParameters()[i].getName());
 						//if they don't match use json to make them
-						if(type.isInstance(obj) ) {
+						
+						if(obj instanceof List) {
+							var genericType = method.getGenericParameterTypes()[i];
+							args[i] = MAPPER.convertValue(obj, new TypeReference<Object>() {
+								@Override
+								public Type getType() {
+									return genericType;
+								}
+							});
+						}else if(type.isInstance(obj) ) {
 							args[i] = obj;
 						}else {
 							if(Optional.class.isAssignableFrom(type)) {
