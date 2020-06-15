@@ -70,13 +70,11 @@
 	</build>
 
 	<dependencies>
-		<!-- https://mvnrepository.com/artifact/com.graphql-java/graphql-java -->
 		<dependency>
 			<groupId>com.graphql-java</groupId>
 			<artifactId>graphql-java</artifactId>
-			<version>2020-01-09T05-33-37-df2835b</version>
+			<version>2020-06-07T01-09-40-d94eacc</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.reflections</groupId>
 			<artifactId>reflections</artifactId>
