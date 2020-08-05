@@ -92,11 +92,11 @@ import graphql.schema.idl.TypeRuntimeWiring;
 
 public class SchemaBuilder {
 	public final static ObjectMapper MAPPER = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).registerModule(new ParameterNamesModule())
-	   .registerModule(new Jdk8Module())
-	   .registerModule(new JavaTimeModule())
-	   .disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS).disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS).disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS).disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
-	   .setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
-	
+			.registerModule(new Jdk8Module())
+			.registerModule(new JavaTimeModule())
+			.disable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS).disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS).disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS).disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
+			.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+
 	private static final GraphQLScalarType INSTANT_SCALAR = GraphQLScalarType.newScalar().name("DateTime").coercing(new InstantCoercing()).build();
 	private static final GraphQLScalarType DATE_SCALAR = GraphQLScalarType.newScalar().name("Date").coercing(new LocalDateCoercing()).build();
 	private static final GraphQLScalarType DURATION_SCALAR = GraphQLScalarType.newScalar().name("Duration").coercing(new DurationCoercing()).build();
@@ -104,7 +104,7 @@ public class SchemaBuilder {
 	private static final GraphQLScalarType MONTH_DAY_SCALAR = GraphQLScalarType.newScalar().name("MonthDay").coercing(new MonthDayCoercing()).build();
 	private static final GraphQLScalarType YEAR_MONTH_SCALAR = GraphQLScalarType.newScalar().name("YearMonth").coercing(new YearMonthCoercing()).build();
 
-	
+
 	private static graphql.GraphQL.Builder build(DirectivesSchema diretives, AuthorizerSchema authorizer, Set<Class<?>> types, Set<Class<?>> scalars, Set<Method> endPoints) throws ReflectiveOperationException {
 		Builder graphQuery = GraphQLObjectType.newObject();
 		graphQuery.name("Query");
@@ -114,12 +114,12 @@ public class SchemaBuilder {
 		graphSubscriptions.name("Subscriptions");
 		Map<String, GraphQLType> additionalTypes = new HashMap<>();
 		GraphQLCodeRegistry.Builder codeRegistry = GraphQLCodeRegistry.newCodeRegistry();
-		
-		
+
+
 		GraphQLDirective directive = GraphQLDirective.newDirective()
 				.name("authorization")
 				.validLocation(DirectiveLocation.FIELD_DEFINITION).build();
-		
+
 		for(Class<?> scalar: scalars) {
 			GraphQLScalarType.Builder scalarType = GraphQLScalarType.newScalar();
 			String typeName = getName(scalar);
@@ -132,204 +132,209 @@ public class SchemaBuilder {
 			}
 			continue;			
 		}
-		
+
 		for(var method: endPoints) {
 			if(!Modifier.isStatic(method.getModifiers())) {
-    			throw new RuntimeException("End point must be a static method");
-    		}
-    		//TODO:query vs mutation
-    		GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
-    		field.name(method.getName());
-    		
-    		TypeMeta meta = new TypeMeta(method.getReturnType(), method.getGenericReturnType());
-    		field.type(getType(meta, method.getAnnotations()));
-    		for(int i = 0; i < method.getParameterCount(); i++) {
-    			GraphQLArgument.Builder argument = GraphQLArgument.newArgument();
-    			if(isContext(method.getParameterTypes()[i])) {
-    				continue;
-    			}
-    			argument.type(getInputType(method.getParameterTypes()[i], method.getGenericParameterTypes()[i], method.getParameterAnnotations()[i]));//TODO:dirty cast
-    			argument.name(method.getParameters()[i].getName());
-    			//TODO: argument.defaultValue(defaultValue)
-    			field.argument(argument);
-    		}
-    
-    		if(method.isAnnotationPresent(Query.class)) {
-    			field.withDirective(directive);
-    			graphQuery.field(field);
-    			
-    			DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
-    			
-    			codeRegistry.dataFetcher(graphQuery.build(), field.build(), fetcher);
-    		}else if(method.isAnnotationPresent(Mutation.class)) {
-    			graphMutations.field(field);
-    			DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
-    			codeRegistry.dataFetcher(FieldCoordinates.coordinates("Mutations", method.getName()), fetcher);
-    		}else if(method.isAnnotationPresent(Subscription.class)) {
-    			graphSubscriptions.field(field);
-    			DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
-    			codeRegistry.dataFetcher(FieldCoordinates.coordinates("Subscriptions", method.getName()), fetcher);
-    		}
-    		
+				throw new RuntimeException("End point must be a static method");
+			}
+			//TODO:query vs mutation
+			GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
+			field.name(method.getName());
+
+			TypeMeta meta = new TypeMeta(null, method.getReturnType(), method.getGenericReturnType());
+			field.type(getType(meta, method.getAnnotations()));
+			for(int i = 0; i < method.getParameterCount(); i++) {
+				GraphQLArgument.Builder argument = GraphQLArgument.newArgument();
+				if(isContext(method.getParameterTypes()[i])) {
+					continue;
+				}
+				argument.type(getInputType(null, method.getParameterTypes()[i], method.getGenericParameterTypes()[i], method.getParameterAnnotations()[i]));//TODO:dirty cast
+				argument.name(method.getParameters()[i].getName());
+				//TODO: argument.defaultValue(defaultValue)
+				field.argument(argument);
+			}
+
+			if(method.isAnnotationPresent(Query.class)) {
+				field.withDirective(directive);
+				graphQuery.field(field);
+
+				DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
+
+				codeRegistry.dataFetcher(graphQuery.build(), field.build(), fetcher);
+			}else if(method.isAnnotationPresent(Mutation.class)) {
+				graphMutations.field(field);
+				DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
+				codeRegistry.dataFetcher(FieldCoordinates.coordinates("Mutations", method.getName()), fetcher);
+			}else if(method.isAnnotationPresent(Subscription.class)) {
+				graphSubscriptions.field(field);
+				DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
+				codeRegistry.dataFetcher(FieldCoordinates.coordinates("Subscriptions", method.getName()), fetcher);
+			}
+
 		}
-		
-		
+
+
 		for(Class<?> type: types) {
-			
-			//special handling
-			if(type.isEnum()) {
-				graphql.schema.GraphQLEnumType.Builder enumType = GraphQLEnumType.newEnum();
+			try {
+				//special handling
+				if(type.isEnum()) {
+					graphql.schema.GraphQLEnumType.Builder enumType = GraphQLEnumType.newEnum();
+					String typeName = getName(type);
+					enumType.name(typeName);
+
+					Object[] enums = type.getEnumConstants();
+					for(Object e: enums) {
+						Enum a = (Enum) e;
+						if(type.getDeclaredField(e.toString()).isAnnotationPresent(GraphQLIgnore.class)) {
+							continue;
+						}
+						enumType.value(a.name(), a);
+					}
+					GraphQLEnumType built = enumType.build();
+					if(additionalTypes.put(built.getName(), built) != null) {
+						throw new RuntimeException(built.getName() + "defined more than once");
+					}
+					continue;
+				}
+
+				SchemaOption schemaType = SchemaOption.BOTH;
+				Entity graphTypeAnnotation = type.getAnnotation(Entity.class);
+				if(graphTypeAnnotation != null) {
+					schemaType = graphTypeAnnotation.value();
+				}
+
+				Builder graphType = GraphQLObjectType.newObject();
 				String typeName = getName(type);
-				enumType.name(typeName);
-				
-				Object[] enums = type.getEnumConstants();
-				for(Object e: enums) {
-					Enum a = (Enum) e;
-					if(type.getDeclaredField(e.toString()).isAnnotationPresent(GraphQLIgnore.class)) {
-						continue;
-					}
-					enumType.value(a.name(), a);
-				}
-				GraphQLEnumType built = enumType.build();
-				if(additionalTypes.put(built.getName(), built) != null) {
-					throw new RuntimeException(built.getName() + "defined more than once");
-				}
-				continue;
-			}
-			
-			SchemaOption schemaType = SchemaOption.BOTH;
-			Entity graphTypeAnnotation = type.getAnnotation(Entity.class);
-			if(graphTypeAnnotation != null) {
-				schemaType = graphTypeAnnotation.value();
-			}
-			
-			Builder graphType = GraphQLObjectType.newObject();
-			String typeName = getName(type);
-			graphType.name(typeName);
-			
-			
-			GraphQLInterfaceType.Builder interfaceBuilder = GraphQLInterfaceType.newInterface();
-			interfaceBuilder.name(typeName);
-			
-			GraphQLInputObjectType.Builder graphInputType = GraphQLInputObjectType.newInputObject();
-			if(schemaType == SchemaOption.INPUT) {
-				graphInputType.name(typeName);
-			}else {
-				graphInputType.name(typeName + "Input");
-			}
-			
-			{
-				GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
-				field.name("__typename");
-				field.type(Scalars.GraphQLString);
-				graphInputType.field(field);
-			}
-			
-			
-			TypeRuntimeWiring.Builder runtime = new TypeRuntimeWiring.Builder();
-			runtime.typeName(typeName);
-			for(Method method: type.getMethods()) {
-				if(method.isSynthetic()) {
-					continue;
-				}
-				if(method.getDeclaringClass().equals(Object.class)) {
-					continue;
-				}
-				if(method.isAnnotationPresent(GraphQLIgnore.class)) {
-					continue;
-				}
-				//will also be on implementing class
-				if(Modifier.isAbstract(method.getModifiers()) || method.getDeclaringClass().isInterface()) {
-					continue;
-				}
-				if(Modifier.isStatic(method.getModifiers())) {
-					continue;
+				graphType.name(typeName);
+
+
+				GraphQLInterfaceType.Builder interfaceBuilder = GraphQLInterfaceType.newInterface();
+				interfaceBuilder.name(typeName);
+
+				GraphQLInputObjectType.Builder graphInputType = GraphQLInputObjectType.newInputObject();
+				if(schemaType == SchemaOption.INPUT) {
+					graphInputType.name(typeName);
 				}else {
-					//getter type
-					if(method.getName().matches("(get|is)[A-Z].*")) {
-						String name;
-						if(method.getName().startsWith("get")) {
-							name = method.getName().substring("get".length(), "get".length() + 1).toLowerCase() + method.getName().substring("get".length() + 1);
+					graphInputType.name(typeName + "Input");
+				}
+
+				{
+					GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
+					field.name("__typename");
+					field.type(Scalars.GraphQLString);
+					graphInputType.field(field);
+				}
+
+
+				TypeRuntimeWiring.Builder runtime = new TypeRuntimeWiring.Builder();
+				runtime.typeName(typeName);
+				for(Method method: type.getMethods()) {
+					try {
+						if(method.isSynthetic()) {
+							continue;
+						}
+						if(method.getDeclaringClass().equals(Object.class)) {
+							continue;
+						}
+						if(method.isAnnotationPresent(GraphQLIgnore.class)) {
+							continue;
+						}
+						//will also be on implementing class
+						if(Modifier.isAbstract(method.getModifiers()) || method.getDeclaringClass().isInterface()) {
+							continue;
+						}
+						if(Modifier.isStatic(method.getModifiers())) {
+							continue;
 						}else {
-							name = method.getName().substring("is".length(), "is".length() + 1).toLowerCase() + method.getName().substring("is".length() + 1);
+							//getter type
+							if(method.getName().matches("(get|is)[A-Z].*")) {
+								String name;
+								if(method.getName().startsWith("get")) {
+									name = method.getName().substring("get".length(), "get".length() + 1).toLowerCase() + method.getName().substring("get".length() + 1);
+								}else {
+									name = method.getName().substring("is".length(), "is".length() + 1).toLowerCase() + method.getName().substring("is".length() + 1);
+								}
+
+								GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
+								field.name(name);
+
+
+								TypeMeta meta = new TypeMeta(type, method.getReturnType(), method.getGenericReturnType());
+								field.type(getType(meta, method.getAnnotations()));
+								graphType.field(field);
+								interfaceBuilder.field(field);
+
+								if(method.getParameterCount() > 0 || diretives.target(method, meta)) {
+									codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name), buildDirectiveWrapper(diretives, method, meta));
+								}
+							}else if(method.getName().matches("set[A-Z].*")) {
+								if(method.getParameterCount() == 1 && !method.isAnnotationPresent(InputIgnore.class)) {
+									String name = method.getName().substring("set".length(), "set".length() + 1).toLowerCase() + method.getName().substring("set".length() + 1);
+									GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
+									field.name(name);
+									field.type(getInputType(type, method.getParameterTypes()[0], method.getGenericParameterTypes()[0], method.getParameterAnnotations()[0]));
+									graphInputType.field(field);
+								}
+							}
 						}
-	
-						GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
-						field.name(name);
-						
-						
-						TypeMeta meta = new TypeMeta(method.getReturnType(), method.getGenericReturnType());
-						field.type(getType(meta, method.getAnnotations()));
-						graphType.field(field);
-						interfaceBuilder.field(field);
-		
-						if(method.getParameterCount() > 0 || diretives.target(method, meta)) {
-							codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name), buildDirectiveWrapper(diretives, method, meta));
-						}
-					}else if(method.getName().matches("set[A-Z].*")) {
-						if(method.getParameterCount() == 1 && !method.isAnnotationPresent(InputIgnore.class)) {
-							String name = method.getName().substring("set".length(), "set".length() + 1).toLowerCase() + method.getName().substring("set".length() + 1);
-							GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
-							field.name(name);
-							field.type(getInputType(method.getParameterTypes()[0], method.getGenericParameterTypes()[0], method.getParameterAnnotations()[0]));
-							graphInputType.field(field);
-						}
+					}catch(RuntimeException e) {
+						throw new RuntimeException("Failed to process method " + method, e);
 					}
 				}
-			}
-			
-			if(type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
-				GraphQLInterfaceType built = interfaceBuilder.build();
-				if(additionalTypes.put(built.getName(), built) != null) {
-					throw new RuntimeException(built.getName() + "defined more than once");
-				}
-				
-				codeRegistry.typeResolver(built.getName(), env -> {
-					if(type.isInstance(env.getObject())) {	
-						return (GraphQLObjectType) additionalTypes.get(getName(env.getObject().getClass()));
+
+				if(type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+					GraphQLInterfaceType built = interfaceBuilder.build();
+					if(additionalTypes.put(built.getName(), built) != null) {
+						throw new RuntimeException(built.getName() + "defined more than once");
 					}
-					return null;
-				});
-				
-				continue;
-			}
-			Class<?> parent = type.getSuperclass();
-			while(parent != null) {
-				if(parent.isAnnotationPresent(Entity.class)) {
-					String interfaceName = getName(parent);
-					graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
-					break;
+
+					codeRegistry.typeResolver(built.getName(), env -> {
+						if(type.isInstance(env.getObject())) {	
+							return (GraphQLObjectType) additionalTypes.get(getName(env.getObject().getClass()));
+						}
+						return null;
+					});
+
+					continue;
 				}
-				parent = parent.getSuperclass();
-			}
-			
-			if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.TYPE) {
-				GraphQLObjectType built = graphType.build();
-				if(additionalTypes.put(built.getName(), built) != null) {
-					throw new RuntimeException(built.getName() + "defined more than once");
-				}
-				codeRegistry.typeResolver(built.getName(), env -> {
-					if(type.isInstance(env.getObject())) {	
-						return built;
+				Class<?> parent = type.getSuperclass();
+				while(parent != null) {
+					if(parent.isAnnotationPresent(Entity.class)) {
+						String interfaceName = getName(parent);
+						graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
 					}
-					return null;
-				});
-			}
-			if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.INPUT) {
-				GraphQLInputObjectType inputBuild = graphInputType.build();
-				if(additionalTypes.put(inputBuild.getName(), inputBuild) != null) {
-					throw new RuntimeException(inputBuild.getName() + " defined more than once");
+					parent = parent.getSuperclass();
 				}
+
+				if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.TYPE) {
+					GraphQLObjectType built = graphType.build();
+					if(additionalTypes.put(built.getName(), built) != null) {
+						throw new RuntimeException(built.getName() + "defined more than once");
+					}
+					codeRegistry.typeResolver(built.getName(), env -> {
+						if(type.isInstance(env.getObject())) {	
+							return built;
+						}
+						return null;
+					});
+				}
+				if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.INPUT) {
+					GraphQLInputObjectType inputBuild = graphInputType.build();
+					if(additionalTypes.put(inputBuild.getName(), inputBuild) != null) {
+						throw new RuntimeException(inputBuild.getName() + " defined more than once");
+					}
+				}
+
+			}catch(RuntimeException e) {
+				throw new RuntimeException("Failed to build schema for class " + type, e);
 			}
-			
-			
-			
+
 		}
 		codeRegistry.typeResolver("ID", env -> {
 			return null;
 		});
-		
-		
+
+
 		return GraphQL.newGraphQL(GraphQLSchema.newSchema().codeRegistry(codeRegistry.build()).additionalTypes(new HashSet<>(additionalTypes.values())).query(graphQuery.build()).mutation(graphMutations).subscription(graphSubscriptions).additionalDirective(directive).build());
 
 	}
@@ -342,7 +347,7 @@ public class SchemaBuilder {
 		DataFetcher<?> fetcher = env -> {
 			Object[] args = new Object[method.getParameterCount()];
 			for(int i = 0; i < args.length; i++) {
-				
+
 				if(method.getParameterTypes()[i].isAssignableFrom(env.getClass())) {
 					args[i] = env;
 				}else if(method.getParameterTypes()[i].isAssignableFrom(env.getContext().getClass())) {
@@ -363,13 +368,13 @@ public class SchemaBuilder {
 				}else {
 					throw e;
 				}
-						
+
 			}
 		};
-		
+
 		fetcher = diretives.wrap(method, meta, fetcher);
 		return fetcher;
-		
+
 	}
 
 	private static <T extends Annotation> DataFetcher<?> buildFetcher(DirectivesSchema diretives, AuthorizerSchema authorizer, Method method, TypeMeta meta) {
@@ -385,7 +390,7 @@ public class SchemaBuilder {
 					}else {
 						Object obj = env.getArgument(method.getParameters()[i].getName());
 						//if they don't match use json to make them
-						
+
 						if(obj instanceof List) {
 							var genericType = method.getGenericParameterTypes()[i];
 							args[i] = MAPPER.convertValue(obj, new TypeReference<Object>() {
@@ -416,7 +421,7 @@ public class SchemaBuilder {
 						}
 					}
 				}
-			
+
 				return method.invoke(null, args);
 			}catch (InvocationTargetException e) {
 				e.printStackTrace();
@@ -425,14 +430,14 @@ public class SchemaBuilder {
 				}else {
 					throw e;
 				}
-						
+
 			}catch (Exception e) {
 				e.printStackTrace();
 				throw e;
 			}
 		};
 		fetcher = diretives.wrap(method, meta, fetcher);
-		
+
 		if(authorizer != null) {
 			fetcher = authorizer.wrap(fetcher, method);
 		}
@@ -537,9 +542,9 @@ public class SchemaBuilder {
 	}
 	
 	
-	private static GraphQLInputType getInputType(Class<?> type, Type genericType, Annotation[] annotations) {
+	private static GraphQLInputType getInputType(Class<?> owningClass, Class<?> type, Type genericType, Annotation[] annotations) {
 		
-		TypeMeta meta = new TypeMeta(type, genericType);
+		TypeMeta meta = new TypeMeta(owningClass, type, genericType);
 		GraphQLInputType toReturn = getInputTypeInner(meta.getType(), annotations);
 		
 		boolean required = true;
@@ -675,4 +680,3 @@ public class SchemaBuilder {
 	}
 
 }
-
