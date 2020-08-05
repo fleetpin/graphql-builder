@@ -302,7 +302,6 @@ public class SchemaBuilder {
 					if(parent.isAnnotationPresent(Entity.class)) {
 						String interfaceName = getName(parent);
 						graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
-						break;
 					}
 					parent = parent.getSuperclass();
 				}
