@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.fleetpin</groupId>
 	<artifactId>graphql-builder</artifactId>
@@ -30,8 +32,8 @@
 		<url>https://github.com/fleetpin/graphql-builder</url>
 		<connection>scm:git:https://github.com/fleetpin/graphql-builder.git</connection>
 		<developerConnection>scm:git:https://github.com/fleetpin/graphql-builder.git</developerConnection>
-	  <tag>HEAD</tag>
-  </scm>
+		<tag>HEAD</tag>
+	</scm>
 
 	<licenses>
 		<license>
@@ -73,7 +75,7 @@
 		<dependency>
 			<groupId>com.graphql-java</groupId>
 			<artifactId>graphql-java</artifactId>
-			<version>2020-06-07T01-09-40-d94eacc</version>
+			<version>2020-07-03T01-10-37-bb87d8f</version>
 		</dependency>
 		<dependency>
 			<groupId>org.reflections</groupId>
@@ -117,7 +119,7 @@
 	</dependencies>
 
 
-<profiles>
+	<profiles>
 		<profile>
 			<id>sonatype</id>
 			<build>
