@@ -54,7 +54,10 @@ public class EntityProcessor {
 		throw new RuntimeException("extraction failure for " + type.getClass());
 	}
 
-	private void addType(Class<?> type, Type genericType, boolean input) {
+	private void addType(Class<?> type, Type genericType) {
+		if(genericType == null) {
+			genericType = type;
+		}
 		try {
 			if(type.isAnnotationPresent(Scalar.class)) {
 				GraphQLScalarType.Builder scalarType = GraphQLScalarType.newScalar();
@@ -195,8 +198,19 @@ public class EntityProcessor {
 					if(parent.isAnnotationPresent(Entity.class)) {
 						String interfaceName = process(parent, type.getGenericSuperclass());
 						graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
+						
+						if(!parent.equals(type.getGenericSuperclass())) {
+							interfaceName = process(parent, parent);
+							graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
+						}
+						
 					}
 					parent = parent.getSuperclass();
+				}
+				
+				if(!type.equals(genericType)) {
+					String interfaceName = process(type, type);
+					graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
 				}
 
 				if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.TYPE) {
@@ -282,8 +296,6 @@ public class EntityProcessor {
 					
 				}	
 			}
-			
-			System.out.println(genericType);
 		}
 		
 		return name;
@@ -292,7 +304,7 @@ public class EntityProcessor {
 	public String process(Class<?> type, Type genericType) {
 		String name = getName(type, genericType);
 				if(name != null && !this.additionalTypes.containsKey(name)) {
-			addType(type, genericType, false);
+			addType(type, genericType);
 		}
 		return name;
 	}
@@ -326,8 +338,6 @@ public class EntityProcessor {
 					
 				}	
 			}
-			
-			System.out.println(name);
 		}
 		
 		return name;
@@ -337,7 +347,7 @@ public class EntityProcessor {
 	public String processInput(Class<?> type, Type genericType) {
 		String name = getNameInput(type, genericType);
 		if(name != null && !this.additionalTypes.containsKey(name)) {
-			addType(type, genericType, true);
+			addType(type, genericType);
 		}
 		return name;
 	}
