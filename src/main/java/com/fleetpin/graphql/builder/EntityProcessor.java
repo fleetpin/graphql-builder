@@ -303,8 +303,7 @@ public class EntityProcessor {
 
 	public String process(Class<?> type, Type genericType) {
 		String name = getName(type, genericType);
-		if(name != null && !this.additionalTypes.containsKey(name)) {
-			this.additionalTypes.put(name, null); // so we don't go around in circles if depend on self
+				if(name != null && !this.additionalTypes.containsKey(name)) {
 			addType(type, genericType);
 		}
 		return name;
@@ -348,7 +347,6 @@ public class EntityProcessor {
 	public String processInput(Class<?> type, Type genericType) {
 		String name = getNameInput(type, genericType);
 		if(name != null && !this.additionalTypes.containsKey(name)) {
-			this.additionalTypes.put(name, null); // so we don't go around in circles if depend on self
 			addType(type, genericType);
 		}
 		return name;
