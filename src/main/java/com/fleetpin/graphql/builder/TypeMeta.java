@@ -12,6 +12,7 @@
 
 package com.fleetpin.graphql.builder;
 
+import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -31,15 +32,11 @@ public class TypeMeta {
 
 	private List<Flag> flags;
 
-	private Type genericType;
 	private Class<?> type;
 
-	private final Type owningClass;
+	private final Class<?> owningClass;
 
-	private EntityProcessor entityProcessor;
-
-	TypeMeta(EntityProcessor entityProcessor, Type owningClass, Class<?> type, Type genericType) {
-		this.entityProcessor = entityProcessor;
+	TypeMeta(Class<?> owningClass, Class<?> type, Type genericType) {
 		this.owningClass = owningClass;
 		flags = new ArrayList<>();
 		process(type, genericType);
@@ -71,51 +68,42 @@ public class TypeMeta {
 		return false;
 	}
 
-	private void findType(TypeVariable type, Type start) {
-		if(start instanceof Class) {
-			var startClass = (Class) start;
-			var genericDeclaration = type.getGenericDeclaration();
-			if(start.equals(genericDeclaration) ) {
-				//we don't have any implementing logic we are at this level so take the bounds
-				for(var bound: type.getBounds()) {
-					if(bound instanceof ParameterizedType) {
-						process((Class<?>) ((ParameterizedType)bound).getRawType(), bound);
-					}else if(bound instanceof TypeVariable) {
-						processGeneric((TypeVariable)bound);
-					}else {
-						process((Class<?>) bound, null);
-					}
+	private void findType(TypeVariable type, Class<?> start) {
+		var genericDeclaration = type.getGenericDeclaration();
+		if(start.equals(genericDeclaration) ) {
+			//we don't have any implementing logic we are at this level so take the bounds
+			for(var bound: type.getBounds()) {
+				if(bound instanceof ParameterizedType) {
+					process((Class<?>) ((ParameterizedType)bound).getRawType(), bound);
+				}else if(bound instanceof TypeVariable) {
+					processGeneric((TypeVariable)bound);
+				}else {
+					process((Class<?>) bound, null);
 				}
 			}
-			if(startClass.getSuperclass() != null && startClass.getSuperclass().equals(genericDeclaration)) {
-				var generic = (ParameterizedType) startClass.getGenericSuperclass();
-				if(matchType(type.getTypeName(), generic)) {
-					return;
-				}
-			}
-			for(var inter: startClass.getGenericInterfaces()) {
-				if(inter instanceof ParameterizedType) {
-					var generic = (ParameterizedType) inter;
-					if(generic.getRawType().equals(genericDeclaration)) {
-						if(matchType(type.getTypeName(), generic)) {
-							return;
-						}
-					}
-				}
-			}
-			if(startClass.getSuperclass() != null) {
-				findType(type, startClass.getSuperclass());
-			}
-	
-			for(var inter: startClass.getInterfaces()) {
-				findType(type, inter);
-			}
-		}else if(start instanceof ParameterizedType) {
-			if(matchType(type.getTypeName(), (ParameterizedType) start)) {
+		}
+		if(start.getSuperclass() != null && start.getSuperclass().equals(genericDeclaration)) {
+			var generic = (ParameterizedType) start.getGenericSuperclass();
+			if(matchType(type.getTypeName(), generic)) {
 				return;
 			}
-		}else {
-			throw new UnsupportedOperationException("Does not handle type " + start);
+		}
+		for(var inter: start.getGenericInterfaces()) {
+			if(inter instanceof ParameterizedType) {
+				var generic = (ParameterizedType) inter;
+				if(generic.getRawType().equals(genericDeclaration)) {
+					if(matchType(type.getTypeName(), generic)) {
+						return;
+					}
+				}
+			}
+		}
+		if(start.getSuperclass() != null) {
+			findType(type, start.getSuperclass());
+		}
+
+		for(var inter: start.getInterfaces()) {
+			findType(type, inter);
 		}
 
 
@@ -186,7 +174,6 @@ public class TypeMeta {
 			return;
 		}
 		this.type = type;
-		this.genericType = genericType;
 	}
 
 	Class<?> getType() {
@@ -195,14 +182,6 @@ public class TypeMeta {
 
 	public List<Flag> getFlags() {
 		return flags;
-	}
-
-	public String getName() {
-		return entityProcessor.process(type, genericType);
-	}
-
-	public String getInputName() {
-		return entityProcessor.processInput(type, genericType);
 	}
 
 
