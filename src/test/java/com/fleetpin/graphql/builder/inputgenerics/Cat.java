@@ -28,5 +28,14 @@ public class Cat extends Animal {
 	public static boolean addCatGenerics(AnimalInput<Cat> input) {
 		return input.getAnimal().isFur();
 	}
+	
+	
+	@Mutation
+	public static AnimalOuterWrapper<Cat> addNestedGenerics(AnimalInput<Cat> input) {
+		var wrapper = new AnimalOuterWrapper<Cat>();
+		wrapper.setAnimal(new AnimalWrapper<Cat>());
+		wrapper.getAnimal().setAnimal(input.getAnimal());
+		return wrapper;
+	}
 
 }

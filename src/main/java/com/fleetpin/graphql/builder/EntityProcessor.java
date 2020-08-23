@@ -1,10 +1,12 @@
 package com.fleetpin.graphql.builder;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -54,14 +56,16 @@ public class EntityProcessor {
 		throw new RuntimeException("extraction failure for " + type.getClass());
 	}
 
-	private void addType(Class<?> type, Type genericType) {
+	private void addType(TypeMeta meta) {
+		Class<?> type = meta.getType();
+		Type genericType = meta.getGenericType();
 		if(genericType == null) {
 			genericType = type;
 		}
 		try {
 			if(type.isAnnotationPresent(Scalar.class)) {
 				GraphQLScalarType.Builder scalarType = GraphQLScalarType.newScalar();
-				String typeName = getName(type, genericType);
+				String typeName = getName(meta);
 				scalarType.name(typeName);
 				Class<? extends Coercing> coerecing = type.getAnnotation(Scalar.class).value();
 				scalarType.coercing(coerecing.getDeclaredConstructor().newInstance());
@@ -75,7 +79,7 @@ public class EntityProcessor {
 				//special handling
 				if(type.isEnum()) {
 					graphql.schema.GraphQLEnumType.Builder enumType = GraphQLEnumType.newEnum();
-					String typeName = getName(type, genericType);
+					String typeName = getName(meta);
 					enumType.name(typeName);
 
 					Object[] enums = type.getEnumConstants();
@@ -100,7 +104,7 @@ public class EntityProcessor {
 				}
 
 				Builder graphType = GraphQLObjectType.newObject();
-				String typeName = getName(type, genericType);
+				String typeName = getName(meta);
 				graphType.name(typeName);
 
 
@@ -155,39 +159,56 @@ public class EntityProcessor {
 								field.name(name);
 
 
-								TypeMeta meta = new TypeMeta(this, type, method.getReturnType(), method.getGenericReturnType());
-								field.type(SchemaBuilder.getType(meta, method.getAnnotations()));
+								TypeMeta innerMeta = new TypeMeta(this, meta, method.getReturnType(), method.getGenericReturnType());
+								field.type(SchemaBuilder.getType(innerMeta, method.getAnnotations()));
 								graphType.field(field);
 								interfaceBuilder.field(field);
 
-								if(method.getParameterCount() > 0 || directives.target(method, meta)) {
-									codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name), buildDirectiveWrapper(directives, method, meta));
+								if(method.getParameterCount() > 0 || directives.target(method, innerMeta)) {
+									codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name), buildDirectiveWrapper(directives, method, innerMeta));
 								}
 							}else if(method.getName().matches("set[A-Z].*")) {
 								if(method.getParameterCount() == 1 && !method.isAnnotationPresent(InputIgnore.class)) {
 									String name = method.getName().substring("set".length(), "set".length() + 1).toLowerCase() + method.getName().substring("set".length() + 1);
 									GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
 									field.name(name);
-									TypeMeta meta = new TypeMeta(this, genericType, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
-									field.type(SchemaBuilder.getInputType(meta, method.getParameterAnnotations()[0]));
+									TypeMeta innerMeta = new TypeMeta(this, meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
+									field.type(SchemaBuilder.getInputType(innerMeta, method.getParameterAnnotations()[0]));
 									graphInputType.field(field);
 								}
 							}
 						}
 					}catch(RuntimeException e) {
+						e.printStackTrace();
 						throw new RuntimeException("Failed to process method " + method, e);
 					}
 				}
 
-				if(type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+				if(type.isInterface() || Modifier.isAbstract(type.getModifiers()) || meta.hasUnmappedGeneric()) {
 					GraphQLInterfaceType built = interfaceBuilder.build();
 					if(additionalTypes.put(built.getName(), built) != null) {
 						throw new RuntimeException(built.getName() + "defined more than once");
 					}
+					
+					//generics
+					{				
+						TypeMeta innerMeta = new TypeMeta(this, null, type, type);
+						if(!getName(innerMeta).equals(typeName)) {
+							process(innerMeta);
+						}
+						
+					}
 
 					codeRegistry.typeResolver(built.getName(), env -> {
 						if(type.isInstance(env.getObject())) {	
-							return (GraphQLObjectType) additionalTypes.get(getName(env.getObject().getClass(), env.getObject().getClass()));
+							
+							TypeMeta innerMeta = new TypeMeta(this, null, env.getObject().getClass(), env.getObject().getClass());
+							try {
+							return (GraphQLObjectType) additionalTypes.get(typeNameLookup(env.getObject()));
+							}catch (ClassCastException e) {
+								System.out.println((Object) env.getObject());
+								throw e;
+							}
 						}
 						return null;
 					});
@@ -196,21 +217,37 @@ public class EntityProcessor {
 				Class<?> parent = type.getSuperclass();
 				while(parent != null) {
 					if(parent.isAnnotationPresent(Entity.class)) {
-						String interfaceName = process(parent, type.getGenericSuperclass());
+						TypeMeta innerMeta = new TypeMeta(this, meta, parent, type.getGenericSuperclass());
+						String interfaceName = process(innerMeta);
 						graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
 						
 						if(!parent.equals(type.getGenericSuperclass())) {
-							interfaceName = process(parent, parent);
+							innerMeta = new TypeMeta(this, meta, parent, parent);
+							interfaceName = process(innerMeta);
+							graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
+						}
+						
+						var genericMeta = new TypeMeta(this, null, parent, parent);
+						if(!getName(innerMeta).equals(getName(genericMeta))) {
+							interfaceName = process(genericMeta);
 							graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
 						}
 						
 					}
 					parent = parent.getSuperclass();
 				}
-				
-				if(!type.equals(genericType)) {
-					String interfaceName = process(type, type);
-					graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
+				//generics
+				{				
+					TypeMeta innerMeta = new TypeMeta(this, meta, type, type);
+					if(!getName(innerMeta).equals(typeName)) {
+						String interfaceName = process(innerMeta);
+						graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
+					}
+					innerMeta = new TypeMeta(this, null, type, type);
+					if(!getName(innerMeta).equals(typeName)) {
+						String interfaceName = process(innerMeta);
+						graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName));
+					}
 				}
 
 				if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.TYPE) {
@@ -272,7 +309,8 @@ public class EntityProcessor {
 	}
 
 	
-	private String getName(Class<?> type, Type genericType) {
+	private String getName(TypeMeta meta) {
+		var type = meta.getType();
 
 		String name = null;
 
@@ -285,33 +323,79 @@ public class EntityProcessor {
 		if(type.isAnnotationPresent(Entity.class)) {
 			name = type.getSimpleName();
 		}
-		
-		if(genericType instanceof ParameterizedType) {
-			var parameterizedTypes = ((ParameterizedType) genericType).getActualTypeArguments();
-			
-			for(var t: parameterizedTypes) {
+		var genericType = meta.getGenericType();
+
+		for(int i = 0; i < type.getTypeParameters().length; i++) {
+			if(genericType instanceof ParameterizedType) {
+				var t = ((ParameterizedType) genericType).getActualTypeArguments()[i];
 				if(t instanceof Class) {
 					String extra = ((Class) t).getSimpleName();
 					name += "_" + extra;
 					
-				}	
+				}else if(t instanceof TypeVariable){
+					var variable = (TypeVariable) t;
+					Class extra = meta.resolveToType(variable);
+					if(extra != null) {
+						name += "_" + extra.getSimpleName();
+					}
+				}
+			}else {
+				Class extra = meta.resolveToType(type.getTypeParameters()[i]);
+				if(extra != null) {
+					name += "_" + extra.getSimpleName();
+				}
 			}
 		}
-		
 		return name;
 	}
 
-	public String process(Class<?> type, Type genericType) {
-		String name = getName(type, genericType);
+	private String typeNameLookup(Object obj) {
+		var type = obj.getClass();
+		String name = null;
+
+		if(type.isEnum()) {
+			name = type.getSimpleName();
+		}
+		if(type.isAnnotationPresent(Scalar.class)) {
+			name = type.getSimpleName();
+		}
+		if(type.isAnnotationPresent(Entity.class)) {
+			name = type.getSimpleName();
+		}
+		
+		for(var t: type.getTypeParameters()) {
+			t.getTypeName();
+			for(var method: type.getMethods()) {
+				var methodType = method.getGenericReturnType();
+				if(methodType instanceof TypeVariable) {
+					var typeVariable = ((TypeVariable) methodType);
+					if(typeVariable.equals(t)) {
+						//maybe we should dig through private fields first
+						try {
+							name += "_" + typeNameLookup(method.invoke(obj));
+						} catch (ReflectiveOperationException e) {
+							throw new RuntimeException("Could not infre type with regard to generics.");
+						} //TODO: might have arguments might be a future which would make impossible to resolve
+					}
+				}
+			}
+			System.out.println(name);
+		}
+		
+		return name;
+	}
+	
+	public String process(TypeMeta meta) {
+		String name = getName(meta);
 		if(name != null && !this.additionalTypes.containsKey(name)) {
 			this.additionalTypes.put(name, null); // so we don't go around in circles if depend on self
-			addType(type, genericType);
+			addType(meta);
 		}
 		return name;
 	}
 
-	private String getNameInput(Class<?> type, Type genericType) {
-		
+	private String getNameInput(TypeMeta meta) {
+		var type = meta.getType();
 		String name = null;
 		if(type.isEnum()) {
 			name = type.getSimpleName();
@@ -329,6 +413,8 @@ public class EntityProcessor {
 			}
 		}
 		
+		var genericType = meta.getGenericType();
+		
 		if(genericType instanceof ParameterizedType) {
 			var parameterizedTypes = ((ParameterizedType) genericType).getActualTypeArguments();
 			
@@ -345,11 +431,11 @@ public class EntityProcessor {
 	}
 
 
-	public String processInput(Class<?> type, Type genericType) {
-		String name = getNameInput(type, genericType);
+	public String processInput(TypeMeta meta) {
+		String name = getNameInput(meta);
 		if(name != null && !this.additionalTypes.containsKey(name)) {
 			this.additionalTypes.put(name, null); // so we don't go around in circles if depend on self
-			addType(type, genericType);
+			addType(meta);
 		}
 		return name;
 	}
