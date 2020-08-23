@@ -57,6 +57,9 @@ public class AuthorizerSchema {
 				if(basePackages.contains(name)) {
 					return null;
 				}
+				if(name.indexOf('.') == -1) {
+					throw new RuntimeException("Referencing class outside base package " + type);
+				}
 				name = name.substring(0, name.lastIndexOf('.'));
 			}else {
 				return auth;
