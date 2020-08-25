@@ -295,6 +295,8 @@ public class TypeMeta {
 					
 					if(implementingType instanceof Class) {
 						return (Class) implementingType;
+					}else if (implementingType instanceof TypeVariable){
+						return resolveToType((TypeVariable) implementingType);
 					}else {
 						throw new RuntimeException("Generics are more complex that logic currently can handle");
 					}

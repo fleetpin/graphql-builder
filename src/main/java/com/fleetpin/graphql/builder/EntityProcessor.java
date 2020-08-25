@@ -184,7 +184,9 @@ public class EntityProcessor {
 					}
 				}
 
-				if(!input && (type.isInterface() || Modifier.isAbstract(type.getModifiers()) || meta.hasUnmappedGeneric())) {
+				boolean unmappedGenerics = meta.hasUnmappedGeneric();
+				boolean interfaceable = type.isInterface() || Modifier.isAbstract(type.getModifiers());
+				if(!input && (interfaceable || unmappedGenerics)) {
 					GraphQLInterfaceType built = interfaceBuilder.build();
 					if(additionalTypes.put(built.getName(), built) != null) {
 						throw new RuntimeException(built.getName() + "defined more than once");
@@ -193,16 +195,26 @@ public class EntityProcessor {
 					codeRegistry.typeResolver(built.getName(), env -> {
 						if(type.isInstance(env.getObject())) {	
 							
-							TypeMeta innerMeta = new TypeMeta(this, null, env.getObject().getClass(), env.getObject().getClass());
+							var name = typeNameLookup(env.getObject());
+							var t = additionalTypes.get(name);
+							if(!(t instanceof GraphQLObjectType)) {
+								t = additionalTypes.get(name + "_DIRECT");	
+							}
 							try {
-							return (GraphQLObjectType) additionalTypes.get(typeNameLookup(env.getObject()));
+								return (GraphQLObjectType) t;
 							}catch (ClassCastException e) {
 								throw e;
 							}
 						}
 						return null;
 					});
-					return;
+					if(interfaceable) {
+						return;
+					}
+				}
+				if(unmappedGenerics) {
+					graphType.withInterface(GraphQLTypeReference.typeRef(typeName));
+					graphType.name(typeName + "_DIRECT");
 				}
 				Class<?> parent = type.getSuperclass();
 				while(!input && parent != null) {
