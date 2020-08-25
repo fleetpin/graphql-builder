@@ -276,6 +276,34 @@ public class TypeGenericParsingTest {
 		assertEquals("very", dogFur.get("long"));
 	}
 
+	@Test
+	public void testMutationCatFur() throws ReflectiveOperationException {
+		Map<String, Map<String, Map<String, Object>>> response = execute("mutation {makeCat{" +
+				"item { " +
+				"  ... on Cat { " +
+				"   name " +
+				"   fur{ " +
+				"    calico " +
+				"    length" +
+				"    long" +
+				"   }" +
+				"  } " +
+				"}" +
+				"}} ").getData();
+
+		System.out.println(response);
+		var makeCat = response.get("makeCat");
+		
+		var cat = makeCat.get("item");
+		
+		var catFur = (Map<String, Object> )cat.get("fur");
+		
+		assertEquals("name", cat.get("name"));
+		assertEquals(4, catFur.get("length"));
+		assertEquals(true, catFur.get("calico"));
+		assertEquals(true, catFur.get("long"));
+		
+	}
 
 	private ExecutionResult execute(String query) {
 		try {

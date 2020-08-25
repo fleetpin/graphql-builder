@@ -174,6 +174,14 @@ public class SchemaBuilder {
 		}
 		return this;
 	}
+	
+	private SchemaBuilder processTypes(Set<Class<?>> types) {
+		for(var type: types) {
+			TypeMeta meta = new TypeMeta(this.entityProcessor, null, type, type);
+			this.entityProcessor.process(meta);
+		}
+		return this;
+	}
 
 	private graphql.GraphQL.Builder build() {
 		codeRegistry.typeResolver("ID", env -> {
@@ -260,6 +268,8 @@ public class SchemaBuilder {
 		return fetcher;
 	}
 
+
+	
 	static GraphQLOutputType getType(TypeMeta meta, Annotation[] annotations) {
 		
 		
@@ -473,8 +483,9 @@ public class SchemaBuilder {
 		types.removeIf(t -> t.isAnonymousClass());
 		scalars.removeIf(t -> t.isAnonymousClass());
 		
-		return new SchemaBuilder(diretivesSchema, authorizer).process(endPoints).build();
+		return new SchemaBuilder(diretivesSchema, authorizer).process(endPoints).processTypes(types).build();
 	}
+
 
 
 	
