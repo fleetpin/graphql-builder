@@ -260,8 +260,31 @@ public class TypeMeta {
 
 	public Class resolveToType(TypeVariable variable) {
 		var parent = this.parent;
-		while(parent  != null) {
-			var parentType = parent.getType();
+		
+		var parentType = type;
+		var genericType = this.genericType;
+		
+		while(true) {
+
+			if(genericType instanceof ParameterizedType) {
+				var pt =  parentType.getTypeParameters();
+				for(int i =0; i< pt.length; i++) {
+					var p = pt[i];
+					if(p.equals(variable)) {
+						var generic = (ParameterizedType)genericType; //safe as has to if equal vaiable
+						var implementingType = generic.getActualTypeArguments()[i];
+						if(implementingType instanceof Class) {
+							return (Class) implementingType;
+						}else if (implementingType instanceof TypeVariable){
+							return resolveToType((TypeVariable) implementingType);
+						}else {
+							throw new RuntimeException("Generics are more complex that logic currently can handle");
+						}
+						
+					}
+				}
+			}
+			
 			var pt = parentType.getSuperclass().getTypeParameters();
 			for(int i =0; i< pt.length; i++) {
 				var p = pt[i];
@@ -280,6 +303,11 @@ public class TypeMeta {
 				
 			}
 			
+			if(parent == null) {
+				break;
+			}
+			parentType = parent.getType();
+			genericType = parent.getGenericType();
 			parent = parent.parent;
 		}
 		return null;
