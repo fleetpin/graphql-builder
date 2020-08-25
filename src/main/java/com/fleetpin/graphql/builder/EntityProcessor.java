@@ -56,7 +56,7 @@ public class EntityProcessor {
 		throw new RuntimeException("extraction failure for " + type.getClass());
 	}
 
-	private void addType(TypeMeta meta) {
+	private void addType(TypeMeta meta, boolean input) {
 		Class<?> type = meta.getType();
 		Type genericType = meta.getGenericType();
 		if(genericType == null) {
@@ -147,7 +147,7 @@ public class EntityProcessor {
 							continue;
 						}else {
 							//getter type
-							if(method.getName().matches("(get|is)[A-Z].*")) {
+							if(!input && method.getName().matches("(get|is)[A-Z].*")) {
 								String name;
 								if(method.getName().startsWith("get")) {
 									name = method.getName().substring("get".length(), "get".length() + 1).toLowerCase() + method.getName().substring("get".length() + 1);
@@ -167,7 +167,7 @@ public class EntityProcessor {
 								if(method.getParameterCount() > 0 || directives.target(method, innerMeta)) {
 									codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name), buildDirectiveWrapper(directives, method, innerMeta));
 								}
-							}else if(method.getName().matches("set[A-Z].*")) {
+							}else if(input && method.getName().matches("set[A-Z].*")) {
 								if(method.getParameterCount() == 1 && !method.isAnnotationPresent(InputIgnore.class)) {
 									String name = method.getName().substring("set".length(), "set".length() + 1).toLowerCase() + method.getName().substring("set".length() + 1);
 									GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
@@ -184,21 +184,12 @@ public class EntityProcessor {
 					}
 				}
 
-				if(type.isInterface() || Modifier.isAbstract(type.getModifiers()) || meta.hasUnmappedGeneric()) {
+				if(!input && (type.isInterface() || Modifier.isAbstract(type.getModifiers()) || meta.hasUnmappedGeneric())) {
 					GraphQLInterfaceType built = interfaceBuilder.build();
 					if(additionalTypes.put(built.getName(), built) != null) {
 						throw new RuntimeException(built.getName() + "defined more than once");
 					}
 					
-					//generics
-					{				
-						TypeMeta innerMeta = new TypeMeta(this, null, type, type);
-						if(!getName(innerMeta).equals(typeName)) {
-							process(innerMeta);
-						}
-						
-					}
-
 					codeRegistry.typeResolver(built.getName(), env -> {
 						if(type.isInstance(env.getObject())) {	
 							
@@ -206,7 +197,6 @@ public class EntityProcessor {
 							try {
 							return (GraphQLObjectType) additionalTypes.get(typeNameLookup(env.getObject()));
 							}catch (ClassCastException e) {
-								System.out.println((Object) env.getObject());
 								throw e;
 							}
 						}
@@ -215,7 +205,7 @@ public class EntityProcessor {
 					return;
 				}
 				Class<?> parent = type.getSuperclass();
-				while(parent != null) {
+				while(!input && parent != null) {
 					if(parent.isAnnotationPresent(Entity.class)) {
 						TypeMeta innerMeta = new TypeMeta(this, meta, parent, type.getGenericSuperclass());
 						String interfaceName = process(innerMeta);
@@ -237,7 +227,7 @@ public class EntityProcessor {
 					parent = parent.getSuperclass();
 				}
 				//generics
-				{				
+				if(!input) {				
 					TypeMeta innerMeta = new TypeMeta(this, meta, type, type);
 					if(!getName(innerMeta).equals(typeName)) {
 						String interfaceName = process(innerMeta);
@@ -250,7 +240,7 @@ public class EntityProcessor {
 					}
 				}
 
-				if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.TYPE) {
+				if(!input && (schemaType == SchemaOption.BOTH || schemaType == SchemaOption.TYPE)) {
 					GraphQLObjectType built = graphType.build();
 					if(additionalTypes.put(built.getName(), built) != null) {
 						throw new RuntimeException(built.getName() + "defined more than once");
@@ -262,7 +252,7 @@ public class EntityProcessor {
 						return null;
 					});
 				}
-				if(schemaType == SchemaOption.BOTH || schemaType == SchemaOption.INPUT) {
+				if(input && (schemaType == SchemaOption.BOTH || schemaType == SchemaOption.INPUT)) {
 					GraphQLInputObjectType inputBuild = graphInputType.build();
 					if(additionalTypes.put(inputBuild.getName(), inputBuild) != null) {
 						throw new RuntimeException(inputBuild.getName() + " defined more than once");
@@ -379,17 +369,25 @@ public class EntityProcessor {
 					}
 				}
 			}
-			System.out.println(name);
 		}
 		
 		return name;
 	}
 	
 	public String process(TypeMeta meta) {
+		
+		TypeMeta rawMeta = new TypeMeta(this, null,meta.getType(), meta.getType());
+		String rawName = getName(rawMeta);
+
+		if(rawName != null && !this.additionalTypes.containsKey(rawName)) {
+			this.additionalTypes.put(rawName, null); // so we don't go around in circles if depend on self
+			addType(rawMeta, false);
+		}
+		
 		String name = getName(meta);
 		if(name != null && !this.additionalTypes.containsKey(name)) {
 			this.additionalTypes.put(name, null); // so we don't go around in circles if depend on self
-			addType(meta);
+			addType(meta, false);
 		}
 		return name;
 	}
@@ -435,7 +433,7 @@ public class EntityProcessor {
 		String name = getNameInput(meta);
 		if(name != null && !this.additionalTypes.containsKey(name)) {
 			this.additionalTypes.put(name, null); // so we don't go around in circles if depend on self
-			addType(meta);
+			addType(meta, true);
 		}
 		return name;
 	}
