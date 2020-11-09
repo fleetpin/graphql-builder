@@ -459,7 +459,7 @@ public class SchemaBuilder {
 			Restrict annotation = r.getAnnotation(Restrict.class);
 			var factoryClass = annotation.value();
 			var factory = factoryClass.getConstructor().newInstance();
-			if(!factory.extractType().isAssignableFrom(r)) {
+			if(!factory.extractType().equals(r)) {
 				throw new RuntimeException("Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r);
 			}
 			globalRestricts.add(factory);
