@@ -148,13 +148,18 @@ public class DirectivesSchema {
 			if(optional.isEmpty()) {
 				return CompletableFuture.completedFuture(response);
 			}
-			return restrict.allow(optional.get()).thenApply(allow -> {
-				if(allow == Boolean.TRUE) {
-					return response;
-				}else {
-					return Optional.empty();
-				}
-			});
+			var target = optional.get();
+			if(target instanceof List) {
+				return restrict.filter((List)target);
+			}else {
+				return restrict.allow(target).thenApply(allow -> {
+					if(allow == Boolean.TRUE) {
+						return response;
+					}else {
+						return Optional.empty();
+					}
+				});
+			}
 		}else {
 			return restrict.allow(response).thenApply(allow -> {
 				if(allow == Boolean.TRUE) {

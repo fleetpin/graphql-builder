@@ -291,7 +291,6 @@ public class TypeGenericParsingTest {
 				"}" +
 				"}} ").getData();
 
-		System.out.println(response);
 		var makeCat = response.get("makeCat");
 		
 		var cat = makeCat.get("item");
