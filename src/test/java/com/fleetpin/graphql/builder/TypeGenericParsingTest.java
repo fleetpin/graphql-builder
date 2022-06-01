@@ -2,24 +2,14 @@ package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.lang.reflect.GenericDeclaration;
-import java.lang.reflect.ParameterizedType;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fleetpin.graphql.builder.generics.Cat;
-import com.fleetpin.graphql.builder.generics.CatFur;
-import com.fleetpin.graphql.builder.type.SimpleType;
-
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.introspection.Introspection;
 
 public class TypeGenericParsingTest {
 
