@@ -10,19 +10,18 @@
  * the License.
  */
 
-package com.fleetpin.graphql.builder.annotations;
+package com.fleetpin.graphql.builder;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.lang.annotation.Annotation;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 
-import com.fleetpin.graphql.builder.DirectiveOperation;
+/**
+ * Implementations are either 
+ * DirectiveOperator is used to wrap a method call and modify it. Can be used for things like restrictions
+ * SchemaDirective is used to add directive information to the graphql schema
+ * 
+ *
+ */
+public interface DirectiveOperation<T extends Annotation> {
 
-@Retention(RUNTIME)
-@Target(ElementType.ANNOTATION_TYPE)
-public @interface Directive {
-	Class<? extends DirectiveOperation<?>> value();
-	
 }

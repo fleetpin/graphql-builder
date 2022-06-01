@@ -18,8 +18,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -58,6 +56,7 @@ import com.fleetpin.graphql.builder.annotations.Mutation;
 import com.fleetpin.graphql.builder.annotations.Query;
 import com.fleetpin.graphql.builder.annotations.Restrict;
 import com.fleetpin.graphql.builder.annotations.Scalar;
+import com.fleetpin.graphql.builder.annotations.SchemaOption;
 import com.fleetpin.graphql.builder.annotations.Subscription;
 
 import graphql.GraphQL;
@@ -124,6 +123,9 @@ public class SchemaBuilder {
 		this.codeRegistry = GraphQLCodeRegistry.newCodeRegistry();
 
 		this.entityProcessor = new EntityProcessor(additionalTypes, codeRegistry, diretives);
+		
+		
+		diretives.processSDL(entityProcessor);
 
 		this.directive = GraphQLDirective.newDirective()
 				.name("authorization")
@@ -154,12 +156,12 @@ public class SchemaBuilder {
 				field.argument(argument);
 			}
 
+			diretives.addSchemaDirective(method, method.getDeclaringClass(), field::withAppliedDirective);
 			if(method.isAnnotationPresent(Query.class)) {
 				field.withDirective(directive);
 				graphQuery.field(field);
 
 				DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
-
 				codeRegistry.dataFetcher(graphQuery.build(), field.build(), fetcher);
 			}else if(method.isAnnotationPresent(Mutation.class)) {
 				graphMutations.field(field);
@@ -170,6 +172,7 @@ public class SchemaBuilder {
 				DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
 				codeRegistry.dataFetcher(FieldCoordinates.coordinates("Subscriptions", method.getName()), fetcher);
 			}
+			
 
 		}
 		return this;
@@ -178,16 +181,45 @@ public class SchemaBuilder {
 	private SchemaBuilder processTypes(Set<Class<?>> types) {
 		for(var type: types) {
 			TypeMeta meta = new TypeMeta(this.entityProcessor, null, type, type);
-			this.entityProcessor.process(meta);
+			
+			var annotation = type.getAnnotation(Entity.class);
+			if(annotation.value() != SchemaOption.INPUT) {
+				this.entityProcessor.process(meta);
+			}
+			
 		}
 		return this;
 	}
 
-	private graphql.GraphQL.Builder build() {
+	private graphql.GraphQL.Builder build(Set<Class<? extends SchemaConfiguration>> schemaConfiguration) {
 		codeRegistry.typeResolver("ID", env -> {
 			return null;
 		});
-		return GraphQL.newGraphQL(GraphQLSchema.newSchema().codeRegistry(codeRegistry.build()).additionalTypes(new HashSet<>(additionalTypes.values())).query(graphQuery.build()).mutation(graphMutations).subscription(graphSubscriptions).additionalDirective(directive).build());
+		var builder = GraphQLSchema.newSchema().codeRegistry(codeRegistry.build()).additionalTypes(new HashSet<>(additionalTypes.values()));
+		
+		var query = graphQuery.build();
+		builder.query(query);
+		
+		var mutations = graphMutations.build();
+		if(!mutations.getFields().isEmpty()) {
+			builder.mutation(mutations);
+		}
+		var subscriptions = graphSubscriptions.build();
+		if(!subscriptions.getFields().isEmpty()) {
+			builder.subscription(subscriptions);
+		}
+		
+		
+		builder.additionalDirective(directive).build();
+		
+		diretives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
+		
+		
+		for(var schema: schemaConfiguration) {
+			this.diretives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
+		}
+		
+		return GraphQL.newGraphQL(builder.build());
 
 	}
 
@@ -302,16 +334,8 @@ public class SchemaBuilder {
 			}
 		}
 
-		if(type.equals(BigDecimal.class)) {
-			return Scalars.GraphQLBigDecimal;
-		}else if(type.equals(BigInteger.class)) {
-			return Scalars.GraphQLBigInteger;
-		}else if(type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
+		if(type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
 			return Scalars.GraphQLBoolean;
-		}else if(type.equals(Byte.class) || type.equals(Byte.TYPE)) {
-			return Scalars.GraphQLByte;
-		}else if(type.equals(Character.class) || type.equals(Character.TYPE)) {
-			return Scalars.GraphQLChar;
 		}else if(type.equals(Float.class) || type.equals(Float.TYPE)) {
 			return Scalars.GraphQLFloat;
 		}else if(type.equals(Double.class) || type.equals(Double.TYPE)) {
@@ -319,9 +343,9 @@ public class SchemaBuilder {
 		}else if(type.equals(Integer.class) || type.equals(Integer.TYPE)) {
 			return Scalars.GraphQLInt;
 		}else if(type.equals(Long.class) || type.equals(Long.TYPE)) {
-			return Scalars.GraphQLLong;
+			return Scalars.GraphQLInt;
 		}else if(type.equals(Short.class) || type.equals(Short.TYPE)) {
-			return Scalars.GraphQLShort;
+			return Scalars.GraphQLInt;
 		}else if(type.equals(String.class)) {
 			return Scalars.GraphQLString;
 		}else if(type.equals(Instant.class)) {
@@ -386,16 +410,8 @@ public class SchemaBuilder {
 			}
 		}
 
-		if(type.equals(BigDecimal.class)) {
-			return Scalars.GraphQLBigDecimal;
-		}else if(type.equals(BigInteger.class)) {
-			return Scalars.GraphQLBigInteger;
-		}else if(type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
+		if(type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
 			return Scalars.GraphQLBoolean;
-		}else if(type.equals(Byte.class) || type.equals(Byte.TYPE)) {
-			return Scalars.GraphQLByte;
-		}else if(type.equals(Character.class) || type.equals(Character.TYPE)) {
-			return Scalars.GraphQLChar;
 		}else if(type.equals(Float.class) || type.equals(Float.TYPE)) {
 			return Scalars.GraphQLFloat;
 		}else if(type.equals(Double.class) || type.equals(Double.TYPE)) {
@@ -403,9 +419,9 @@ public class SchemaBuilder {
 		}else if(type.equals(Integer.class) || type.equals(Integer.TYPE)) {
 			return Scalars.GraphQLInt;
 		}else if(type.equals(Long.class) || type.equals(Long.TYPE)) {
-			return Scalars.GraphQLLong;
+			return Scalars.GraphQLInt;
 		}else if(type.equals(Short.class) || type.equals(Short.TYPE)) {
-			return Scalars.GraphQLShort;
+			return Scalars.GraphQLInt;
 		}else if(type.equals(String.class)) {
 			return Scalars.GraphQLString;
 		}else if(type.equals(Instant.class)) {
@@ -448,6 +464,8 @@ public class SchemaBuilder {
 		Set<Class<? extends Authorizer>> authorizers = reflections.getSubTypesOf(Authorizer.class);
 		//want to make everything split by package
 		AuthorizerSchema authorizer = AuthorizerSchema.build(new HashSet<>(Arrays.asList(classPath)), authorizers);
+
+		Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
 		
 		
 		Set<Class<?>> dierctivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
@@ -483,7 +501,7 @@ public class SchemaBuilder {
 		types.removeIf(t -> t.isAnonymousClass());
 		scalars.removeIf(t -> t.isAnonymousClass());
 		
-		return new SchemaBuilder(diretivesSchema, authorizer).process(endPoints).processTypes(types).build();
+		return new SchemaBuilder(diretivesSchema, authorizer).process(endPoints).processTypes(types).build(schemaConfiguration);
 	}
 
 

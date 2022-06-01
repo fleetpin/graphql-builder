@@ -246,13 +246,13 @@ public class TypeGenericParsingTest {
 				" fur{ " +
 				"  calico " +
 				"  length" +
-				"  long" +
+				"  catFur: long" +
 				" }" +
 				"} " +
 				"... on Dog {" +
 				" fur {" +
 				"   shaggy" +
-				"   long" +
+				"   dogFur: long" +
 				"   length" +
 				" } " +
 				"} " +
@@ -269,11 +269,11 @@ public class TypeGenericParsingTest {
 		assertEquals("name", cat.get("name"));
 		assertEquals(4, catFur.get("length"));
 		assertEquals(true, catFur.get("calico"));
-		assertEquals(true, catFur.get("long"));
+		assertEquals(true, catFur.get("catFur"));
 		
 		assertEquals(4, dogFur.get("length"));
 		assertEquals(true, dogFur.get("shaggy"));
-		assertEquals("very", dogFur.get("long"));
+		assertEquals("very", dogFur.get("dogFur"));
 	}
 
 	@Test

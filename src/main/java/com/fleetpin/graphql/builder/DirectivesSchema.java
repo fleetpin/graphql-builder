@@ -15,7 +15,7 @@ package com.fleetpin.graphql.builder;
 
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
@@ -29,7 +29,9 @@ import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 
@@ -37,28 +39,37 @@ import com.fleetpin.graphql.builder.annotations.Directive;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLDirective;
 import io.reactivex.rxjava3.core.Flowable;
 
-public class DirectivesSchema {
+class DirectivesSchema {
 
 	private final Collection<RestrictTypeFactory<?>> global;
 	private final Map<Class<? extends Annotation>, DirectiveCaller<?>> targets;
+	private final Map<Class<? extends Annotation>, SDLDirective<?, ?>> schemaDirective;
+	private Map<Class<? extends Annotation>, SDLProcessor> sdlProcessors;
 
-	private DirectivesSchema(Collection<RestrictTypeFactory<?>> global, Map<Class<? extends Annotation>, DirectiveCaller<?>> targets) {
+	private DirectivesSchema(Collection<RestrictTypeFactory<?>> global, Map<Class<? extends Annotation>, DirectiveCaller<?>> targets, Map<Class<? extends Annotation>, SDLDirective<?, ?>> schemaDirective) {
 		this.global = global;
 		this.targets = targets;
+		this.schemaDirective = schemaDirective;
 	}
 	//TODO:mess of exceptions
-	public static DirectivesSchema build(List<RestrictTypeFactory<?>> globalDirectives, Set<Class<?>> dierctiveTypes) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+	public static DirectivesSchema build(List<RestrictTypeFactory<?>> globalDirectives, Set<Class<?>> dierctiveTypes) throws ReflectiveOperationException {
 		Map<Class<? extends Annotation>, DirectiveCaller<?>> targets = new HashMap<>();
+		Map<Class<? extends Annotation>, SDLDirective<?, ?>> graphqlDirective = new HashMap<>();
 		for(Class<?> directiveType: dierctiveTypes) {
+			if(!directiveType.isAnnotationPresent(Directive.class)) {
+				continue;
+			}
 			if(!directiveType.isAnnotation()) {
 				//TODO:better error management
-				throw new RuntimeException("@Diretive Annotation must only be placed on annotations");
+				throw new RuntimeException("@Directive Annotation must only be placed on annotations");
 			}
 			
-			Directive directive = directiveType.getAnnotation(Directive.class);
-			Class<? extends DirectiveCaller> caller = directive.value();
+			var directive = directiveType.getAnnotation(Directive.class);
+			Class<? extends DirectiveOperation<?>> caller = directive.value();
 			//TODO: if target implents other things this won't lineup right
 			Class<?> target = (Class<?>) ((ParameterizedType) caller.getGenericInterfaces()[0]).getActualTypeArguments()[0];
 			if(!target.equals(directiveType)) {
@@ -67,13 +78,17 @@ public class DirectivesSchema {
 			}
 			
 			
-			
-			//TODO error for no zero args constructor
-			DirectiveCaller<?> callerInstance = caller.getConstructor().newInstance();
-			targets.put((Class<? extends Annotation>) directiveType, callerInstance);
+			if(caller.isAssignableFrom(DirectiveCaller.class)) {
+				//TODO error for no zero args constructor
+				var callerInstance = (DirectiveCaller<?>) caller.getConstructor().newInstance();
+				targets.put((Class<? extends Annotation>) directiveType, callerInstance);
+			}else {
+				var callerInstance = (SDLDirective<?, ?>) caller.getConstructor().newInstance();
+				graphqlDirective.put((Class<? extends Annotation>) directiveType, callerInstance);
+			}
 		}
 		
-		return new DirectivesSchema(globalDirectives, targets);
+		return new DirectivesSchema(globalDirectives, targets, graphqlDirective);
 	}
 	private DirectiveCaller<?> get(Annotation annotation) {
 		return targets.get(annotation.annotationType());
@@ -83,6 +98,11 @@ public class DirectivesSchema {
 			return directive.process(annotation, env, fetcher);
 		};
 	}
+	
+	public Stream<GraphQLDirective> getSchemaDirective() {
+		return sdlProcessors.values().stream().map(f -> f.getDirective());
+	}
+	
 	private DataFetcher<?> wrap(RestrictTypeFactory<?> directive, DataFetcher<?> fetcher) {
 		//TODO: hate having this cache here would love to scope against the env object but nothing to hook into dataload caused global leak
 		Map<DataFetchingEnvironment, CompletableFuture<RestrictType>> cache = Collections.synchronizedMap(new WeakHashMap<>());
@@ -175,6 +195,27 @@ public class DirectivesSchema {
 						throw new RuntimeException(e);
 					}
 				}).collect(Collectors.toList()));
+	}
+
+	
+	public void addSchemaDirective(AnnotatedElement element, Class<?> location, Consumer<GraphQLAppliedDirective> builder) {
+		for(Annotation annotation: element.getAnnotations()) {
+			var processor =  this.sdlProcessors.get(annotation.annotationType());
+			if(processor != null) {
+				processor.apply(annotation, location, builder);
+			}
+		}
+		
+	}
+	public void processSDL(EntityProcessor entityProcessor) {
+		
+		Map<Class<? extends Annotation>, SDLProcessor> sdlProcessors = new HashMap<>();
+		
+		this.schemaDirective.forEach((k, v) -> {
+			sdlProcessors.put(k, SDLProcessor.build(entityProcessor, v));
+		});
+		this.sdlProcessors = sdlProcessors;
+		
 	}
 	
 }

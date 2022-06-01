@@ -10,19 +10,21 @@
  * the License.
  */
 
-package com.fleetpin.graphql.builder.annotations;
+package com.fleetpin.graphql.builder;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.lang.annotation.Annotation;
+import java.util.List;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import graphql.introspection.Introspection.DirectiveLocation;
 
-import com.fleetpin.graphql.builder.DirectiveOperation;
-
-@Retention(RUNTIME)
-@Target(ElementType.ANNOTATION_TYPE)
-public @interface Directive {
-	Class<? extends DirectiveOperation<?>> value();
+public interface SDLDirective<T extends Annotation, K> extends DirectiveOperation<T>{
 	
+	public List<DirectiveLocation> validLocations();
+	
+	public K build(T annotation, Class<?> location);
+
+	public default boolean repeatable() {
+		return false;
+	}
+
 }

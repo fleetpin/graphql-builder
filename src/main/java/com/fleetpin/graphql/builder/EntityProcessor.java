@@ -1,7 +1,7 @@
 package com.fleetpin.graphql.builder;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
 import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
@@ -16,11 +17,11 @@ import com.fleetpin.graphql.builder.annotations.InputIgnore;
 import com.fleetpin.graphql.builder.annotations.Scalar;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 
-import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.Scalars;
 import graphql.schema.Coercing;
 import graphql.schema.DataFetcher;
 import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLAppliedDirective;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
@@ -32,8 +33,9 @@ import graphql.schema.GraphQLObjectType.Builder;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
+import graphql.schema.idl.TypeRuntimeWiring;
 
-public class EntityProcessor {
+class EntityProcessor {
 
 	private final Map<String, GraphQLType> additionalTypes;
 	private final GraphQLCodeRegistry.Builder codeRegistry;
@@ -69,6 +71,8 @@ public class EntityProcessor {
 				scalarType.name(typeName);
 				Class<? extends Coercing> coerecing = type.getAnnotation(Scalar.class).value();
 				scalarType.coercing(coerecing.getDeclaredConstructor().newInstance());
+
+				addDirectives(type, type, scalarType::withAppliedDirective);
 				var built = scalarType.build();
 				if(additionalTypes.put(built.getName(), built) != null) {
 					throw new RuntimeException(built.getName() + "defined more than once");
@@ -90,6 +94,7 @@ public class EntityProcessor {
 						}
 						enumType.value(a.name(), a);
 					}
+					addDirectives(type, type, enumType::withAppliedDirective);
 					GraphQLEnumType built = enumType.build();
 					if(additionalTypes.put(built.getName(), built) != null) {
 						throw new RuntimeException(built.getName() + "defined more than once");
@@ -157,6 +162,7 @@ public class EntityProcessor {
 
 								GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
 								field.name(name);
+								addDirectives(method, type, field::withAppliedDirective);
 
 
 								TypeMeta innerMeta = new TypeMeta(this, meta, method.getReturnType(), method.getGenericReturnType());
@@ -172,6 +178,7 @@ public class EntityProcessor {
 									String name = method.getName().substring("set".length(), "set".length() + 1).toLowerCase() + method.getName().substring("set".length() + 1);
 									GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
 									field.name(name);
+									addDirectives(method, type, field::withAppliedDirective);
 									TypeMeta innerMeta = new TypeMeta(this, meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
 									field.type(SchemaBuilder.getInputType(innerMeta, method.getParameterAnnotations()[0]));
 									graphInputType.field(field);
@@ -187,6 +194,7 @@ public class EntityProcessor {
 				boolean unmappedGenerics = meta.hasUnmappedGeneric();
 				boolean interfaceable = type.isInterface() || Modifier.isAbstract(type.getModifiers());
 				if(!input && (interfaceable || unmappedGenerics)) {
+					addDirectives(type, type, interfaceBuilder::withAppliedDirective);
 					GraphQLInterfaceType built = interfaceBuilder.build();
 					if(additionalTypes.put(built.getName(), built) != null) {
 						throw new RuntimeException(built.getName() + "defined more than once");
@@ -253,6 +261,7 @@ public class EntityProcessor {
 				}
 
 				if(!input && (schemaType == SchemaOption.BOTH || schemaType == SchemaOption.TYPE)) {
+					addDirectives(type, type, graphType::withAppliedDirective);
 					GraphQLObjectType built = graphType.build();
 					if(additionalTypes.put(built.getName(), built) != null) {
 						throw new RuntimeException(built.getName() + "defined more than once");
@@ -265,6 +274,7 @@ public class EntityProcessor {
 					});
 				}
 				if(input && (schemaType == SchemaOption.BOTH || schemaType == SchemaOption.INPUT)) {
+					addDirectives(type, type, graphInputType::withAppliedDirective);
 					GraphQLInputObjectType inputBuild = graphInputType.build();
 					if(additionalTypes.put(inputBuild.getName(), inputBuild) != null) {
 						throw new RuntimeException(inputBuild.getName() + " defined more than once");
@@ -275,6 +285,15 @@ public class EntityProcessor {
 			throw new RuntimeException("Failed to build schema for class " + type, e);
 		}
 	}
+	
+
+
+
+	private void addDirectives(AnnotatedElement element, Class<?> location, Consumer<GraphQLAppliedDirective> builder) {
+		this.directives.addSchemaDirective(element, location, builder);
+	}
+
+
 	
 	private static <T extends Annotation> DataFetcher<?> buildDirectiveWrapper(DirectivesSchema diretives, Method method, TypeMeta meta) {
 		DataFetcher<?> fetcher = env -> {
@@ -449,5 +468,7 @@ public class EntityProcessor {
 		}
 		return name;
 	}
+
+
 
 }
