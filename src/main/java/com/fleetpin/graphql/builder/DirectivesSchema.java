@@ -78,7 +78,7 @@ class DirectivesSchema {
 			}
 			
 			
-			if(caller.isAssignableFrom(DirectiveCaller.class)) {
+			if(DirectiveCaller.class.isAssignableFrom(caller)) {
 				//TODO error for no zero args constructor
 				var callerInstance = (DirectiveCaller<?>) caller.getConstructor().newInstance();
 				targets.put((Class<? extends Annotation>) directiveType, callerInstance);
@@ -130,7 +130,7 @@ class DirectivesSchema {
 		
 		for(var global: this.global) {
 			//TODO: extract class
-			if(meta.getType().equals(global.extractType())) {
+			if(global.extractType().isAssignableFrom(meta.getType())) {
 				return true;
 			}
 		}
@@ -143,7 +143,7 @@ class DirectivesSchema {
 	}
 	public DataFetcher<?> wrap(Method method,  TypeMeta meta, DataFetcher<?> fetcher) {
 		for(var g: global) {
-			if(meta.getType().equals(g.extractType())) {
+			if(g.extractType().isAssignableFrom(meta.getType())) {
 				fetcher = wrap(g, fetcher);
 			}
 		}
@@ -168,13 +168,18 @@ class DirectivesSchema {
 			if(optional.isEmpty()) {
 				return CompletableFuture.completedFuture(response);
 			}
-			return restrict.allow(optional.get()).thenApply(allow -> {
+			var target = optional.get();
+			if(target instanceof List) {
+				return restrict.filter((List)target);
+			}else {
+			return restrict.allow(target).thenApply(allow -> {
 				if(allow == Boolean.TRUE) {
 					return response;
 				}else {
 					return Optional.empty();
 				}
 			});
+			}
 		}else {
 			return restrict.allow(response).thenApply(allow -> {
 				if(allow == Boolean.TRUE) {
