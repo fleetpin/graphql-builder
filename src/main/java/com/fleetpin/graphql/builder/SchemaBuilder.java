@@ -55,6 +55,7 @@ import com.fleetpin.graphql.builder.annotations.Id;
 import com.fleetpin.graphql.builder.annotations.Mutation;
 import com.fleetpin.graphql.builder.annotations.Query;
 import com.fleetpin.graphql.builder.annotations.Restrict;
+import com.fleetpin.graphql.builder.annotations.Restricts;
 import com.fleetpin.graphql.builder.annotations.Scalar;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 import com.fleetpin.graphql.builder.annotations.Subscription;
@@ -471,6 +472,7 @@ public class SchemaBuilder {
 		Set<Class<?>> dierctivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
 		
 		Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
+		Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
 		List<RestrictTypeFactory<?>> globalRestricts = new ArrayList<>();
 		
 		for(var r: restrict) {
@@ -481,6 +483,19 @@ public class SchemaBuilder {
 				throw new RuntimeException("Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r);
 			}
 			globalRestricts.add(factory);
+		}
+		
+		for(var r: restricts) {
+			Restricts annotations = r.getAnnotation(Restricts.class);
+			for (Restrict annotation: annotations.value()) {
+				var factoryClass = annotation.value();
+				var factory = factoryClass.getConstructor().newInstance();
+				
+				if(!factory.extractType().isAssignableFrom(r)) {
+					throw new RuntimeException("Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r);
+				}
+				globalRestricts.add(factory);
+			}
 		}
 		
 		DirectivesSchema diretivesSchema = DirectivesSchema.build(globalRestricts, dierctivesTypes);
