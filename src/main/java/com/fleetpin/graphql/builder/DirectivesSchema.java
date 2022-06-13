@@ -172,13 +172,13 @@ class DirectivesSchema {
 			if(target instanceof List) {
 				return restrict.filter((List)target);
 			}else {
-			return restrict.allow(target).thenApply(allow -> {
-				if(allow == Boolean.TRUE) {
-					return response;
-				}else {
-					return Optional.empty();
-				}
-			});
+				return restrict.allow(target).thenApply(allow -> {
+					if(allow == Boolean.TRUE) {
+						return response;
+					}else {
+						return Optional.empty();
+					}
+				});
 			}
 		}else {
 			return restrict.allow(response).thenApply(allow -> {
