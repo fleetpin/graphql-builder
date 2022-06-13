@@ -19,7 +19,3 @@ jobs:
         java-version: 11
     - name: Build with Maven
       run: mvn -B test --file pom.xml
-    - uses: ashley-taylor/junit-report-annotations-action@v1.0
-      if: always()
-      with:
-        access-token: ${{ secrets.GITHUB_TOKEN }}
