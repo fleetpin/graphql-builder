@@ -9,6 +9,7 @@ import org.reactivestreams.Publisher;
 import com.fleetpin.graphql.builder.RestrictType;
 import com.fleetpin.graphql.builder.RestrictTypeFactory;
 import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.Query;
 import com.fleetpin.graphql.builder.annotations.Restrict;
 import com.fleetpin.graphql.builder.annotations.Subscription;
 
@@ -27,6 +28,11 @@ public class Test {
 
 	public boolean isValue() {
 		return value;
+	}
+	
+	@Query
+	public static String MustHaveAQuery() {
+		return "String";
 	}
 	
 	@Subscription

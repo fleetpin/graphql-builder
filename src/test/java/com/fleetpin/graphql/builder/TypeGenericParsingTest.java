@@ -2,24 +2,14 @@ package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.lang.reflect.GenericDeclaration;
-import java.lang.reflect.ParameterizedType;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fleetpin.graphql.builder.generics.Cat;
-import com.fleetpin.graphql.builder.generics.CatFur;
-import com.fleetpin.graphql.builder.type.SimpleType;
-
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.introspection.Introspection;
 
 public class TypeGenericParsingTest {
 
@@ -246,13 +236,13 @@ public class TypeGenericParsingTest {
 				" fur{ " +
 				"  calico " +
 				"  length" +
-				"  long" +
+				"  catFur: long" +
 				" }" +
 				"} " +
 				"... on Dog {" +
 				" fur {" +
 				"   shaggy" +
-				"   long" +
+				"   dogFur: long" +
 				"   length" +
 				" } " +
 				"} " +
@@ -269,11 +259,11 @@ public class TypeGenericParsingTest {
 		assertEquals("name", cat.get("name"));
 		assertEquals(4, catFur.get("length"));
 		assertEquals(true, catFur.get("calico"));
-		assertEquals(true, catFur.get("long"));
+		assertEquals(true, catFur.get("catFur"));
 		
 		assertEquals(4, dogFur.get("length"));
 		assertEquals(true, dogFur.get("shaggy"));
-		assertEquals("very", dogFur.get("long"));
+		assertEquals("very", dogFur.get("dogFur"));
 	}
 
 	@Test

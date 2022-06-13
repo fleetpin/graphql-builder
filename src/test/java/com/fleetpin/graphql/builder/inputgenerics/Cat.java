@@ -2,6 +2,7 @@ package com.fleetpin.graphql.builder.inputgenerics;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
 import com.fleetpin.graphql.builder.annotations.Mutation;
+import com.fleetpin.graphql.builder.annotations.Query;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 
 @Entity(SchemaOption.BOTH)
@@ -16,6 +17,11 @@ public class Cat extends Animal {
 	
 	public boolean isFur() {
 		return fur;
+	}
+	
+	@Query
+	public static String getCat() {
+		return "cat";
 	}
 	
 	@Mutation
