@@ -1,6 +1,6 @@
 name: Release
 on: 
-  deployment
+  workflow_dispatch
 jobs:
   release:
     runs-on: ubuntu-latest
