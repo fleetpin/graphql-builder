@@ -94,6 +94,7 @@ public class SchemaBuilder {
 	private static final GraphQLScalarType ZONE_ID_SCALAR = GraphQLScalarType.newScalar().name("Timezone").coercing(new ZoneIdCoercing()).build();
 	private static final GraphQLScalarType MONTH_DAY_SCALAR = GraphQLScalarType.newScalar().name("MonthDay").coercing(new MonthDayCoercing()).build();
 	private static final GraphQLScalarType YEAR_MONTH_SCALAR = GraphQLScalarType.newScalar().name("YearMonth").coercing(new YearMonthCoercing()).build();
+	private static final GraphQLScalarType LONG_SCALAR = GraphQLScalarType.newScalar().name("Long").coercing(new GraphqlLongCoercing()).build();
 
 	private final DirectivesSchema diretives;
 	private final AuthorizerSchema authorizer;
@@ -343,6 +344,8 @@ public class SchemaBuilder {
 			return Scalars.GraphQLFloat;
 		}else if(type.equals(Integer.class) || type.equals(Integer.TYPE)) {
 			return Scalars.GraphQLInt;
+		}else if(type.equals(Long.class) || type.equals(Integer.TYPE)) {
+			return LONG_SCALAR;
 		}else if(type.equals(Long.class) || type.equals(Long.TYPE)) {
 			return Scalars.GraphQLInt;
 		}else if(type.equals(Short.class) || type.equals(Short.TYPE)) {
@@ -420,7 +423,7 @@ public class SchemaBuilder {
 		}else if(type.equals(Integer.class) || type.equals(Integer.TYPE)) {
 			return Scalars.GraphQLInt;
 		}else if(type.equals(Long.class) || type.equals(Long.TYPE)) {
-			return Scalars.GraphQLInt;
+			return LONG_SCALAR;
 		}else if(type.equals(Short.class) || type.equals(Short.TYPE)) {
 			return Scalars.GraphQLInt;
 		}else if(type.equals(String.class)) {
