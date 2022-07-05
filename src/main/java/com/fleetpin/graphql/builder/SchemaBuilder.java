@@ -60,15 +60,13 @@ import com.fleetpin.graphql.builder.annotations.Scalar;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 import com.fleetpin.graphql.builder.annotations.Subscription;
 
-import graphql.GraphQL;
+import graphql.GraphQLContext;
 import graphql.Scalars;
-import graphql.introspection.Introspection.DirectiveLocation;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
@@ -100,7 +98,6 @@ public class SchemaBuilder {
 	private final AuthorizerSchema authorizer;
 
 	private final GraphQLCodeRegistry.Builder codeRegistry;
-	private final GraphQLDirective directive;
 
 	private final Map<String, GraphQLType> additionalTypes;
 	
@@ -129,9 +126,6 @@ public class SchemaBuilder {
 		
 		diretives.processSDL(entityProcessor);
 
-		this.directive = GraphQLDirective.newDirective()
-				.name("authorization")
-				.validLocation(DirectiveLocation.FIELD_DEFINITION).build();
 	}
 	
 	private SchemaBuilder process(Set<Method> endPoints) throws ReflectiveOperationException {
@@ -160,7 +154,6 @@ public class SchemaBuilder {
 
 			diretives.addSchemaDirective(method, method.getDeclaringClass(), field::withAppliedDirective);
 			if(method.isAnnotationPresent(Query.class)) {
-				field.withDirective(directive);
 				graphQuery.field(field);
 
 				DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
@@ -193,7 +186,7 @@ public class SchemaBuilder {
 		return this;
 	}
 
-	private graphql.GraphQL.Builder build(Set<Class<? extends SchemaConfiguration>> schemaConfiguration) {
+	private GraphQLSchema build(Set<Class<? extends SchemaConfiguration>> schemaConfiguration) {
 		codeRegistry.typeResolver("ID", env -> {
 			return null;
 		});
@@ -212,7 +205,7 @@ public class SchemaBuilder {
 		}
 		
 		
-		builder.additionalDirective(directive).build();
+		builder.build();
 		
 		diretives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
 		
@@ -221,12 +214,12 @@ public class SchemaBuilder {
 			this.diretives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
 		}
 		
-		return GraphQL.newGraphQL(builder.build());
+		return builder.build();
 
 	}
 
 	private static boolean isContext(Class<?> class1) {
-		return class1.isAssignableFrom(DataFetchingEnvironment.class) || class1.isAnnotationPresent(Context.class);
+		return class1.isAssignableFrom(GraphQLContext.class) ||  class1.isAssignableFrom(DataFetchingEnvironment.class) || class1.isAnnotationPresent(Context.class);
 	}
 
 	private static <T extends Annotation> DataFetcher<?> buildFetcher(DirectivesSchema diretives, AuthorizerSchema authorizer, Method method, TypeMeta meta) {
@@ -461,7 +454,7 @@ public class SchemaBuilder {
 		throw new RuntimeException("Unsupport type " + type);
 	}
 
-	public static graphql.GraphQL.Builder build(String... classPath) throws ReflectiveOperationException {
+	public static GraphQLSchema build(String... classPath) throws ReflectiveOperationException {
 		
 		
 		Reflections reflections = new Reflections(classPath, new SubTypesScanner(), new MethodAnnotationsScanner(), new TypeAnnotationsScanner());

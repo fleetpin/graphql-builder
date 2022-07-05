@@ -25,7 +25,7 @@ public class RestrictionTypesTest {
 	private static GraphQL schema;
 	@BeforeAll
 	public static void init() throws ReflectiveOperationException {
-		schema = SchemaBuilder.build("com.fleetpin.graphql.builder.restrictions.parameter").build();	
+		schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.restrictions.parameter")).build();	
 	}
 	
 	private static String singleQueryGql = "query entityQuery( $allowed: Boolean! ) { single(allowed: $allowed) { __typename } }";

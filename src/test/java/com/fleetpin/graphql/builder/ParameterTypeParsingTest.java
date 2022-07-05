@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
+import graphql.GraphQL;
 
 public class ParameterTypeParsingTest {
 
@@ -136,7 +137,7 @@ public class ParameterTypeParsingTest {
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("type", obj);
 
-		var schema = SchemaBuilder.build("com.fleetpin.graphql.builder.parameter").build();
+		var schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.parameter")).build();
 		var input = ExecutionInput.newExecutionInput().query(query).variables(variables).build();
 		ExecutionResult result = schema.execute(input);
 		if (!result.getErrors().isEmpty()) {

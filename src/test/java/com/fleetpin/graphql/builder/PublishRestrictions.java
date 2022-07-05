@@ -21,6 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
+import graphql.GraphQL;
 import io.reactivex.rxjava3.core.Flowable;
 
 public class PublishRestrictions {
@@ -28,7 +29,7 @@ public class PublishRestrictions {
 	
 	@Test
 	public void testOptionalArray() throws ReflectiveOperationException {
-		var schema = SchemaBuilder.build("com.fleetpin.graphql.builder.publishRestrictions").build();
+		var schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.publishRestrictions")).build();
 		var res = schema.execute("subscription {test {value}} ");
 		Publisher<Test> response = res.getData();
 		assertEquals(0, Flowable.fromPublisher(response).count().blockingGet());

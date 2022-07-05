@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import graphql.ExecutionResult;
+import graphql.GraphQL;
 
 public class TypeParsingTest {
 	@Test
@@ -219,7 +220,7 @@ public class TypeParsingTest {
 
 
 	private ExecutionResult execute(String query) throws ReflectiveOperationException {
-		var schema = SchemaBuilder.build("com.fleetpin.graphql.builder.type").build();
+		var schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.type")).build();
 		ExecutionResult result = schema.execute(query);
 		if(!result.getErrors().isEmpty()) {
 			throw new RuntimeException(result.getErrors().toString()); //TODO:cleanup
