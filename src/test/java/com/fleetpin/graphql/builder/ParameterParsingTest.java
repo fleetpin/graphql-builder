@@ -228,7 +228,7 @@ public class ParameterParsingTest {
 	
 	
 	private ExecutionResult execute(String query) throws ReflectiveOperationException {
-		var schema = SchemaBuilder.build("com.fleetpin.graphql.builder.parameter").build();
+		var schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.parameter")).build();
 		ExecutionResult result = schema.execute(query);
 		if(!result.getErrors().isEmpty()) {
 			throw new RuntimeException(result.getErrors().toString()); //TODO:cleanup

@@ -296,7 +296,7 @@ public class TypeGenericParsingTest {
 
 	private ExecutionResult execute(String query) {
 		try {
-			GraphQL schema = SchemaBuilder.build("com.fleetpin.graphql.builder.generics").build();
+			GraphQL schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.generics")).build();
 			ExecutionResult result = schema.execute(query);
 			if(!result.getErrors().isEmpty()) {
 				throw new RuntimeException(result.getErrors().toString());
