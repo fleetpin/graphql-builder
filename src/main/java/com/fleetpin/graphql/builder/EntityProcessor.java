@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.GraphQLDeprecated;
+import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
 import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
 import com.fleetpin.graphql.builder.annotations.InputIgnore;
 import com.fleetpin.graphql.builder.annotations.Scalar;
@@ -69,6 +71,12 @@ class EntityProcessor {
 				GraphQLScalarType.Builder scalarType = GraphQLScalarType.newScalar();
 				String typeName = getName(meta);
 				scalarType.name(typeName);
+				
+				var description = type.getAnnotation(GraphQLDescription.class);
+				if(description != null) {
+					scalarType.description(description.value());
+				}
+				
 				Class<? extends Coercing> coerecing = type.getAnnotation(Scalar.class).value();
 				scalarType.coercing(coerecing.getDeclaredConstructor().newInstance());
 
@@ -85,6 +93,11 @@ class EntityProcessor {
 					graphql.schema.GraphQLEnumType.Builder enumType = GraphQLEnumType.newEnum();
 					String typeName = getName(meta);
 					enumType.name(typeName);
+					
+					var description = type.getAnnotation(GraphQLDescription.class);
+					if(description != null) {
+						enumType.description(description.value());
+					}
 
 					Object[] enums = type.getEnumConstants();
 					for(Object e: enums) {
@@ -112,6 +125,7 @@ class EntityProcessor {
 				String typeName = getName(meta);
 				graphType.name(typeName);
 
+			
 
 				GraphQLInterfaceType.Builder interfaceBuilder = GraphQLInterfaceType.newInterface();
 				interfaceBuilder.name(typeName);
@@ -128,6 +142,13 @@ class EntityProcessor {
 					field.name("__typename");
 					field.type(Scalars.GraphQLString);
 					graphInputType.field(field);
+				}
+				{
+					var description = type.getAnnotation(GraphQLDescription.class);
+					if(description != null) {
+						graphType.description(description.value());
+						graphInputType.description(description.value());
+					}
 				}
 
 
@@ -163,7 +184,14 @@ class EntityProcessor {
 								GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
 								field.name(name);
 								addDirectives(method, type, field::withAppliedDirective);
-
+								var deprecated = method.getAnnotation(GraphQLDeprecated.class);
+								if(deprecated != null) {
+									field.deprecate(deprecated.value());
+								}
+								var description = method.getAnnotation(GraphQLDescription.class);
+								if(description != null) {
+									field.description(description.value());
+								}
 
 								TypeMeta innerMeta = new TypeMeta(this, meta, method.getReturnType(), method.getGenericReturnType());
 								field.type(SchemaBuilder.getType(innerMeta, method.getAnnotations()));

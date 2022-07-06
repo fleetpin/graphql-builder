@@ -51,6 +51,8 @@ import com.fleetpin.graphql.builder.TypeMeta.Flag;
 import com.fleetpin.graphql.builder.annotations.Context;
 import com.fleetpin.graphql.builder.annotations.Directive;
 import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.GraphQLDeprecated;
+import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
 import com.fleetpin.graphql.builder.annotations.Id;
 import com.fleetpin.graphql.builder.annotations.Mutation;
 import com.fleetpin.graphql.builder.annotations.Query;
@@ -135,8 +137,19 @@ public class SchemaBuilder {
 			}
 			//TODO:query vs mutation
 			GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
+			
+			var deprecated = method.getAnnotation(GraphQLDeprecated.class);
+			if(deprecated != null) {
+				field.deprecate(deprecated.value());
+			}
+			
+			var description = method.getAnnotation(GraphQLDescription.class);
+			if(description != null) {
+				field.description(description.value());
+			}
+			
 			field.name(method.getName());
-
+			
 			TypeMeta meta = new TypeMeta(entityProcessor, null, method.getReturnType(), method.getGenericReturnType());
 			field.type(getType(meta, method.getAnnotations()));
 			for(int i = 0; i < method.getParameterCount(); i++) {
