@@ -129,7 +129,7 @@ class EntityProcessor {
 
 				GraphQLInterfaceType.Builder interfaceBuilder = GraphQLInterfaceType.newInterface();
 				interfaceBuilder.name(typeName);
-
+				
 				GraphQLInputObjectType.Builder graphInputType = GraphQLInputObjectType.newInputObject();
 				if(schemaType == SchemaOption.INPUT) {
 					graphInputType.name(typeName);
@@ -148,6 +148,7 @@ class EntityProcessor {
 					if(description != null) {
 						graphType.description(description.value());
 						graphInputType.description(description.value());
+						interfaceBuilder.description(description.value());
 					}
 				}
 
