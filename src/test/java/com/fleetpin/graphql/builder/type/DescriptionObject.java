@@ -1,4 +1,3 @@
-
 package com.fleetpin.graphql.builder.type;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
@@ -10,10 +9,10 @@ import com.fleetpin.graphql.builder.annotations.Query;
 public class DescriptionObject {
 
 	@GraphQLDescription("first and last")
-	public DescriptionObject getName()  {
+	public DescriptionObject getName() {
 		return null;
 	}
-	
+
 	@Query
 	@GraphQLDescription("returns something")
 	public static DescriptionObject descriptionTest() {

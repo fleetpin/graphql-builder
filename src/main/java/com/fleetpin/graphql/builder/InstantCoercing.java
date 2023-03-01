@@ -12,12 +12,11 @@
 
 package com.fleetpin.graphql.builder;
 
-import java.time.Instant;
-
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+import java.time.Instant;
 
 public class InstantCoercing implements Coercing<Instant, Instant> {
 
@@ -35,19 +34,16 @@ public class InstantCoercing implements Coercing<Instant, Instant> {
 	public Instant parseLiteral(Object input) throws CoercingParseLiteralException {
 		return convertImpl(input);
 	}
-	
-	
-	 private Instant convertImpl(Object input) {
-         if (input instanceof Instant) {
-             return (Instant) input;
-         } else if (input instanceof String) {
-             return Instant.parse((String) input);
-         }
-         if (input instanceof Long) {
-             return Instant.ofEpochMilli((long) input);
-         }
-         return null;
-     }
 
-
+	private Instant convertImpl(Object input) {
+		if (input instanceof Instant) {
+			return (Instant) input;
+		} else if (input instanceof String) {
+			return Instant.parse((String) input);
+		}
+		if (input instanceof Long) {
+			return Instant.ofEpochMilli((long) input);
+		}
+		return null;
+	}
 }

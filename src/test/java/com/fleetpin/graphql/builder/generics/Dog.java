@@ -13,7 +13,7 @@ public class Dog extends Animal<DogFur> {
 	public int getAge() {
 		return 6;
 	}
-	
+
 	@Mutation
 	public static Dog getDog() {
 		return null;

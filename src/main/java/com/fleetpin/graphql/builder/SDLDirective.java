@@ -12,19 +12,16 @@
 
 package com.fleetpin.graphql.builder;
 
+import graphql.introspection.Introspection.DirectiveLocation;
 import java.lang.annotation.Annotation;
 import java.util.List;
 
-import graphql.introspection.Introspection.DirectiveLocation;
-
-public interface SDLDirective<T extends Annotation, K> extends DirectiveOperation<T>{
-	
+public interface SDLDirective<T extends Annotation, K> extends DirectiveOperation<T> {
 	public List<DirectiveLocation> validLocations();
-	
+
 	public K build(T annotation, Class<?> location);
 
 	public default boolean repeatable() {
 		return false;
 	}
-
 }

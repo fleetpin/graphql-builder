@@ -12,12 +12,10 @@
 
 package com.fleetpin.graphql.builder;
 
-import java.lang.annotation.Annotation;
-
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import java.lang.annotation.Annotation;
 
-public interface DirectiveCaller<T extends Annotation> extends DirectiveOperation<T>{
+public interface DirectiveCaller<T extends Annotation> extends DirectiveOperation<T> {
 	public Object process(T annotation, DataFetchingEnvironment env, DataFetcher<?> fetcher) throws Exception;
-
 }

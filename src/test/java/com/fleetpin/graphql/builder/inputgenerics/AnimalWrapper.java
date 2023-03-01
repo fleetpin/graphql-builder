@@ -4,6 +4,7 @@ import com.fleetpin.graphql.builder.annotations.Entity;
 
 @Entity
 public class AnimalWrapper<T extends Animal> {
+
 	String id;
 	T animal;
 
@@ -22,5 +23,4 @@ public class AnimalWrapper<T extends Animal> {
 	public void setAnimal(T animal) {
 		this.animal = animal;
 	}
-
 }

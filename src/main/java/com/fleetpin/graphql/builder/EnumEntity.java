@@ -1,0 +1,57 @@
+package com.fleetpin.graphql.builder;
+
+import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
+import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
+import com.fleetpin.graphql.builder.mapper.InputTypeBuilder;
+import graphql.schema.GraphQLEnumType;
+import graphql.schema.GraphQLNamedInputType;
+import graphql.schema.GraphQLNamedOutputType;
+
+public class EnumEntity extends EntityHolder {
+
+	private final GraphQLEnumType enumType;
+
+	public EnumEntity(DirectivesSchema directives, TypeMeta meta) throws ReflectiveOperationException {
+		graphql.schema.GraphQLEnumType.Builder enumType = GraphQLEnumType.newEnum();
+		String typeName = EntityUtil.getName(meta);
+		enumType.name(typeName);
+
+		var type = meta.getType();
+
+		var description = type.getAnnotation(GraphQLDescription.class);
+		if (description != null) {
+			enumType.description(description.value());
+		}
+
+		Object[] enums = type.getEnumConstants();
+		for (Object e : enums) {
+			Enum a = (Enum) e;
+			if (type.getDeclaredField(e.toString()).isAnnotationPresent(GraphQLIgnore.class)) {
+				continue;
+			}
+			enumType.value(a.name(), a);
+		}
+		directives.addSchemaDirective(type, type, enumType::withAppliedDirective);
+		this.enumType = enumType.build();
+	}
+
+	@Override
+	protected GraphQLNamedInputType buildInput() {
+		return enumType;
+	}
+
+	@Override
+	protected GraphQLNamedOutputType buildType() {
+		return enumType;
+	}
+
+	@Override
+	protected String buildInputName() {
+		return enumType.getName();
+	}
+
+	@Override
+	protected InputTypeBuilder buildResolver() {
+		return null;
+	}
+}

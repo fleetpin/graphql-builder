@@ -12,12 +12,11 @@
 
 package com.fleetpin.graphql.builder;
 
-import java.time.LocalDate;
-
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+import java.time.LocalDate;
 
 public class LocalDateCoercing implements Coercing<LocalDate, LocalDate> {
 
@@ -35,16 +34,13 @@ public class LocalDateCoercing implements Coercing<LocalDate, LocalDate> {
 	public LocalDate parseLiteral(Object input) throws CoercingParseLiteralException {
 		return convertImpl(input);
 	}
-	
-	
-	 private LocalDate convertImpl(Object input) {
-         if (input instanceof LocalDate) {
-             return (LocalDate) input;
-         } else if (input instanceof String) {
-             return LocalDate.parse((String) input);
-         }
-         return null;
-     }
 
-
+	private LocalDate convertImpl(Object input) {
+		if (input instanceof LocalDate) {
+			return (LocalDate) input;
+		} else if (input instanceof String) {
+			return LocalDate.parse((String) input);
+		}
+		return null;
+	}
 }

@@ -22,5 +22,4 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface Entity {
 	SchemaOption value() default SchemaOption.TYPE;
-
 }

@@ -14,19 +14,16 @@ package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import graphql.GraphQL;
+import io.reactivex.rxjava3.core.Flowable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
-import graphql.GraphQL;
-import io.reactivex.rxjava3.core.Flowable;
-
 public class PublishRestrictions {
 
-	
 	@Test
 	public void testOptionalArray() throws ReflectiveOperationException {
 		var schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.publishRestrictions")).build();
@@ -34,8 +31,4 @@ public class PublishRestrictions {
 		Publisher<Test> response = res.getData();
 		assertEquals(0, Flowable.fromPublisher(response).count().blockingGet());
 	}
-	
-	
-	
-	
 }

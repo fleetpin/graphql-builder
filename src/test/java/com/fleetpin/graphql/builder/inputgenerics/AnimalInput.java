@@ -5,6 +5,7 @@ import com.fleetpin.graphql.builder.annotations.SchemaOption;
 
 @Entity(SchemaOption.INPUT)
 public class AnimalInput<T extends Animal> {
+
 	String id;
 	T animal;
 
@@ -23,5 +24,4 @@ public class AnimalInput<T extends Animal> {
 	public void setAnimal(T animal) {
 		this.animal = animal;
 	}
-
 }

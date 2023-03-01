@@ -1,12 +1,11 @@
 package com.fleetpin.graphql.builder.type;
 
+import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.Query;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-
-import com.fleetpin.graphql.builder.annotations.Entity;
-import com.fleetpin.graphql.builder.annotations.Query;
 
 @Entity
 public class SimpleType {
@@ -66,7 +65,7 @@ public class SimpleType {
 	public CompletableFuture<Optional<List<Optional<String>>>> getOptionalGappyPartsFuture() {
 		return CompletableFuture.completedFuture(Optional.empty());
 	}
-	
+
 	@Query
 	public static SimpleType simpleType() {
 		return new SimpleType();

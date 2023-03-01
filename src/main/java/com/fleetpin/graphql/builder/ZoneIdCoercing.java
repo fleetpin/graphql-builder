@@ -12,12 +12,11 @@
 
 package com.fleetpin.graphql.builder;
 
-import java.time.ZoneId;
-
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+import java.time.ZoneId;
 
 public class ZoneIdCoercing implements Coercing<ZoneId, ZoneId> {
 
@@ -35,16 +34,13 @@ public class ZoneIdCoercing implements Coercing<ZoneId, ZoneId> {
 	public ZoneId parseLiteral(Object input) throws CoercingParseLiteralException {
 		return convertImpl(input);
 	}
-	
-	
-	 private ZoneId convertImpl(Object input) {
-         if (input instanceof ZoneId) {
-             return (ZoneId) input;
-         } else if (input instanceof String) {
-             return ZoneId.of((String) input);
-         }
-         return null;
-     }
 
-
+	private ZoneId convertImpl(Object input) {
+		if (input instanceof ZoneId) {
+			return (ZoneId) input;
+		} else if (input instanceof String) {
+			return ZoneId.of((String) input);
+		}
+		return null;
+	}
 }

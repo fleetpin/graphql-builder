@@ -5,6 +5,7 @@ import com.fleetpin.graphql.builder.annotations.SchemaOption;
 
 @Entity(SchemaOption.BOTH)
 public class AnimalOuterWrapper<T extends Animal> {
+
 	String id;
 	AnimalWrapper<T> animal;
 
@@ -23,5 +24,4 @@ public class AnimalOuterWrapper<T extends Animal> {
 	public void setAnimal(AnimalWrapper<T> animal) {
 		this.animal = animal;
 	}
-
 }

@@ -4,6 +4,4 @@ import com.fleetpin.graphql.builder.annotations.Entity;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 
 @Entity(SchemaOption.INPUT)
-public class CatAnimalInput extends AnimalInput<Cat> {
-
-}
+public class CatAnimalInput extends AnimalInput<Cat> {}

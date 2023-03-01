@@ -1,11 +1,10 @@
 package com.fleetpin.graphql.builder;
 
-import java.time.YearMonth;
-
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+import java.time.YearMonth;
 
 public class YearMonthCoercing implements Coercing<YearMonth, YearMonth> {
 
@@ -23,14 +22,13 @@ public class YearMonthCoercing implements Coercing<YearMonth, YearMonth> {
 	public YearMonth parseLiteral(Object input) throws CoercingParseLiteralException {
 		return convertImpl(input);
 	}
-	
-	
-	 private YearMonth convertImpl(Object input) {
-         if (input instanceof YearMonth) {
-             return (YearMonth) input;
-         } else if (input instanceof String) {
-             return YearMonth.parse((String) input);
-         }
-         return null;
-     }
+
+	private YearMonth convertImpl(Object input) {
+		if (input instanceof YearMonth) {
+			return (YearMonth) input;
+		} else if (input instanceof String) {
+			return YearMonth.parse((String) input);
+		}
+		return null;
+	}
 }
