@@ -1,3 +1,26 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Scalar;
@@ -9,16 +32,9 @@ import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLUnionType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.MonthDay;
-import java.time.YearMonth;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -44,9 +60,6 @@ public class EntityProcessor {
 		put(Boolean.class, new ScalarEntity(Scalars.GraphQLBoolean));
 		put(Boolean.TYPE, new ScalarEntity(Scalars.GraphQLBoolean));
 
-		put(Float.class, new ScalarEntity(Scalars.GraphQLFloat));
-		put(Float.TYPE, new ScalarEntity(Scalars.GraphQLFloat));
-
 		put(Double.class, new ScalarEntity(Scalars.GraphQLFloat));
 		put(Double.TYPE, new ScalarEntity(Scalars.GraphQLFloat));
 
@@ -54,16 +67,6 @@ public class EntityProcessor {
 		put(Integer.TYPE, new ScalarEntity(Scalars.GraphQLInt));
 
 		put(String.class, new ScalarEntity(Scalars.GraphQLString));
-
-		put(Long.class, new ScalarEntity(SchemaBuilder.LONG_SCALAR));
-		put(Long.TYPE, new ScalarEntity(SchemaBuilder.LONG_SCALAR));
-
-		put(Instant.class, new ScalarEntity(SchemaBuilder.INSTANT_SCALAR));
-		put(LocalDate.class, new ScalarEntity(SchemaBuilder.DATE_SCALAR));
-		put(ZoneId.class, new ScalarEntity(SchemaBuilder.ZONE_ID_SCALAR));
-		put(Duration.class, new ScalarEntity(SchemaBuilder.DURATION_SCALAR));
-		put(MonthDay.class, new ScalarEntity(SchemaBuilder.MONTH_DAY_SCALAR));
-		put(YearMonth.class, new ScalarEntity(SchemaBuilder.YEAR_MONTH_SCALAR));
 	}
 
 	private void put(Class<?> type, ScalarEntity entity) {
@@ -85,6 +88,9 @@ public class EntityProcessor {
 			name,
 			__ -> {
 				Class<?> type = meta.getType();
+				if (type.equals(Object.class)) {
+					return new ReferenceEntity("Object");
+				}
 				Type genericType = meta.getGenericType();
 				if (genericType == null) {
 					genericType = type;
@@ -157,69 +163,4 @@ public class EntityProcessor {
 		var meta = new TypeMeta(null, type, type);
 		return getEntity(meta).getResolver(meta);
 	}
-	//
-	//
-	//	private static Class<?> extraOptionalType(Type type) {
-	//		if (type instanceof Class) {
-	//			return (Class<?>) type;
-	//		} else if (type instanceof ParameterizedType) {
-	//			return extraOptionalType(((ParameterizedType) type).getActualTypeArguments()[0]);
-	//		}
-	//		throw new RuntimeException("extraction failure for " + type.getClass());
-	//	}
-
-	//
-	//	private String getNameInput(TypeMeta meta) {
-	//		var type = meta.getType();
-	//		String name = null;
-	//		if (type.isEnum()) {
-	//			name = type.getSimpleName();
-	//		}else if (type.isAnnotationPresent(Scalar.class)) {
-	//			name = type.getSimpleName();
-	//		}else if (type.isAnnotationPresent(OneOf.class)) {
-	//			name = type.getSimpleName();
-	//		}else if (type.isAnnotationPresent(Entity.class)) {
-	//			if (type.getAnnotation(Entity.class).value() == SchemaOption.BOTH) {
-	//				name = type.getSimpleName() + "Input";
-	//			} else {
-	//				name = type.getSimpleName();
-	//			}
-	//		}else {
-	//			name = type.getSimpleName() + "Input";
-	//		}
-	//
-	//		var genericType = meta.getGenericType();
-	//
-	//		if (genericType instanceof ParameterizedType) {
-	//			var parameterizedTypes = ((ParameterizedType) genericType).getActualTypeArguments();
-	//
-	//			for (var t : parameterizedTypes) {
-	//				if (t instanceof Class) {
-	//					String extra = ((Class) t).getSimpleName();
-	//					name += "_" + extra;
-	//				}
-	//			}
-	//		}
-	//
-	//		return name;
-	//	}
-
-	//	public String processInput(TypeMeta meta) {
-	//		String name = getNameInput(meta);
-	//		if (name != null && !this.additionalTypes.containsKey(name) && !inputTypeBuilders.containsKey(meta.getGenericType())) {
-	//			this.additionalTypes.put(name, null); // so we don't go around in circles if depend on self
-	//			addType(meta, true);
-	//		}
-	//		return name;
-	//	}
-	//
-	//	public ObjectBuilder getResolver(TypeMeta meta) {
-	//		processInput(meta);
-	//		return InputTypeBuilder.process(inputTypeBuilders, meta.getTypes().iterator());
-	//	}
-	//
-	//	public EntitiesHolder getEntities() {
-	//		return entities;
-	//	}
-
 }

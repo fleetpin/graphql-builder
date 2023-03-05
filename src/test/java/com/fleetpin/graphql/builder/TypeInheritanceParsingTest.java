@@ -1,9 +1,21 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import java.util.List;
@@ -51,8 +63,7 @@ public class TypeInheritanceParsingTest {
 	@Test
 	public void testCatFur() throws ReflectiveOperationException {
 		var name = getField("Cat", "OBJECT", "fur");
-		var nonNull = confirmNonNull(name);
-		confirmBoolean(nonNull);
+		confirmBoolean(name);
 	}
 
 	@Test
@@ -269,6 +280,64 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
+	public void testOptionalFieldNotSet() throws ReflectiveOperationException {
+		Map<String, List<Map<String, Object>>> response = execute(
+			"mutation {myAnimals(animals: [" +
+			"{cat: {calico: false, name: \"socks\", age: 4}}," +
+			"]){" +
+			"name " +
+			"... on Cat { " +
+			"  age " +
+			"  calico " +
+			" fur " +
+			"} " +
+			"... on Dog {" +
+			" age " +
+			"} " +
+			"}} "
+		)
+			.getData();
+
+		var animals = response.get("myAnimals");
+
+		var cat = animals.get(0);
+
+		assertEquals("socks", cat.get("name"));
+		assertEquals(4, cat.get("age"));
+		assertEquals(false, cat.get("calico"));
+		assertEquals(true, cat.get("fur"));
+	}
+
+	@Test
+	public void testOptionalFieldNull() throws ReflectiveOperationException {
+		Map<String, List<Map<String, Object>>> response = execute(
+			"mutation {myAnimals(animals: [" +
+			"{cat: {fur: null, calico: false, name: \"socks\", age: 4}}," +
+			"]){" +
+			"name " +
+			"... on Cat { " +
+			"  age " +
+			"  calico " +
+			" fur " +
+			"} " +
+			"... on Dog {" +
+			" age " +
+			"} " +
+			"}} "
+		)
+			.getData();
+
+		var animals = response.get("myAnimals");
+
+		var cat = animals.get(0);
+
+		assertEquals("socks", cat.get("name"));
+		assertEquals(4, cat.get("age"));
+		assertEquals(false, cat.get("calico"));
+		assertEquals(null, cat.get("fur"));
+	}
+
+	@Test
 	public void testOneOfError() throws ReflectiveOperationException {
 		var exception = assertThrows(
 			RuntimeException.class,
@@ -295,10 +364,70 @@ public class TypeInheritanceParsingTest {
 		assertTrue(exception.getMessage().contains("OneOf must only have a single field set"));
 	}
 
+	@Test
+	public void testOneOfErrorEmpty() throws ReflectiveOperationException {
+		var exception = assertThrows(
+			RuntimeException.class,
+			() ->
+				execute(
+					"mutation {myAnimals(animals: [" +
+					"{}" +
+					"]){" +
+					"name " +
+					"... on Cat { " +
+					"  age " +
+					"  calico " +
+					"} " +
+					"... on Dog {" +
+					" age " +
+					" fur " +
+					"} " +
+					"}} "
+				)
+					.getData()
+		);
+
+		assertTrue(exception.getMessage().contains("OneOf must only have a single field set"));
+	}
+
+	@Test
+	public void testOneOfErrorField() throws ReflectiveOperationException {
+		var exception = assertThrows(
+			RuntimeException.class,
+			() ->
+				execute(
+					"mutation {myAnimals(animals: [" +
+					"{cat: {fur: null, calico: false, name: \"socks\", age: 4, error: \"fail\"}}" +
+					"]){" +
+					"name " +
+					"... on Cat { " +
+					"  age " +
+					"  calico " +
+					"} " +
+					"... on Dog {" +
+					" age " +
+					" fur " +
+					"} " +
+					"}} "
+				)
+					.getData()
+		);
+		assertTrue(exception.getMessage().contains("ERROR"));
+	}
+
 	private ExecutionResult execute(String query) {
+		return execute(query, null);
+	}
+
+	private ExecutionResult execute(String query, Map<String, Object> variables) {
 		try {
 			GraphQL schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.type")).build();
-			ExecutionResult result = schema.execute(query);
+			var input = ExecutionInput.newExecutionInput();
+			input.query(query);
+			if (variables != null) {
+				input.variables(variables);
+			}
+			ExecutionResult result = schema.execute(input);
 			if (!result.getErrors().isEmpty()) {
 				throw new RuntimeException(result.getErrors().toString()); //TODO:cleanup
 			}

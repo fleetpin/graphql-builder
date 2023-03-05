@@ -9,6 +9,17 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
 
 package com.fleetpin.graphql.builder;
 
@@ -24,7 +35,6 @@ import com.fleetpin.graphql.builder.annotations.Restricts;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 import com.fleetpin.graphql.builder.annotations.Subscription;
 import graphql.GraphQLContext;
-import graphql.language.UnionTypeDefinition;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.FieldCoordinates;
@@ -33,7 +43,6 @@ import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLObjectType.Builder;
-import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -49,14 +58,6 @@ import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 
 public class SchemaBuilder {
-
-	protected static final GraphQLScalarType INSTANT_SCALAR = GraphQLScalarType.newScalar().name("DateTime").coercing(new InstantCoercing()).build();
-	protected static final GraphQLScalarType DATE_SCALAR = GraphQLScalarType.newScalar().name("Date").coercing(new LocalDateCoercing()).build();
-	protected static final GraphQLScalarType DURATION_SCALAR = GraphQLScalarType.newScalar().name("Duration").coercing(new DurationCoercing()).build();
-	protected static final GraphQLScalarType ZONE_ID_SCALAR = GraphQLScalarType.newScalar().name("Timezone").coercing(new ZoneIdCoercing()).build();
-	protected static final GraphQLScalarType MONTH_DAY_SCALAR = GraphQLScalarType.newScalar().name("MonthDay").coercing(new MonthDayCoercing()).build();
-	protected static final GraphQLScalarType YEAR_MONTH_SCALAR = GraphQLScalarType.newScalar().name("YearMonth").coercing(new YearMonthCoercing()).build();
-	protected static final GraphQLScalarType LONG_SCALAR = GraphQLScalarType.newScalar().name("Long").coercing(new GraphqlLongCoercing()).build();
 
 	private final DirectivesSchema diretives;
 	private final AuthorizerSchema authorizer;
@@ -152,7 +153,7 @@ public class SchemaBuilder {
 		return this;
 	}
 
-	private GraphQLSchema build(Set<Class<? extends SchemaConfiguration>> schemaConfiguration) {
+	private graphql.schema.GraphQLSchema.Builder build(Set<Class<? extends SchemaConfiguration>> schemaConfiguration) {
 		var builder = GraphQLSchema.newSchema().codeRegistry(codeRegistry.build()).additionalTypes(entityProcessor.getAdditionalTypes());
 
 		var query = graphQuery.build();
@@ -167,15 +168,12 @@ public class SchemaBuilder {
 			builder.subscription(subscriptions);
 		}
 
-		builder.build();
-
 		diretives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
 
 		for (var schema : schemaConfiguration) {
 			this.diretives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
 		}
-
-		return builder.build();
+		return builder;
 	}
 
 	private static boolean isContext(Class<?> class1) {
@@ -258,6 +256,10 @@ public class SchemaBuilder {
 	}
 
 	public static GraphQLSchema build(String... classPath) throws ReflectiveOperationException {
+		return builder(classPath).build();
+	}
+
+	public static GraphQLSchema.Builder builder(String... classPath) throws ReflectiveOperationException {
 		Reflections reflections = new Reflections(classPath, Scanners.SubTypes, Scanners.MethodsAnnotated, Scanners.TypesAnnotated);
 		Set<Class<? extends Authorizer>> authorizers = reflections.getSubTypesOf(Authorizer.class);
 		//want to make everything split by package

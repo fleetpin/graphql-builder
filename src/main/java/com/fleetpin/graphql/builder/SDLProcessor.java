@@ -1,3 +1,26 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
@@ -50,54 +73,31 @@ public class SDLProcessor {
 						builder.repeatable(directive.repeatable());
 						List<Function<Object, GraphQLAppliedDirectiveArgument>> builders = new ArrayList<>();
 						for (Method method : arguments.getMethods()) {
+							if (method.getParameterCount() != 0) {
+								continue;
+							}
 							try {
-								if (method.isSynthetic()) {
-									continue;
-								}
-								if (method.getDeclaringClass().equals(Object.class)) {
-									continue;
-								}
-								if (method.isAnnotationPresent(GraphQLIgnore.class)) {
-									continue;
-								}
-								//will also be on implementing class
-								if (Modifier.isAbstract(method.getModifiers()) || method.getDeclaringClass().isInterface()) {
-									continue;
-								}
-								if (Modifier.isStatic(method.getModifiers())) {
-									continue;
-								} else {
-									if (method.getName().matches("(get|is)[A-Z].*") && method.getParameterCount() == 0) {
-										String name;
-										if (method.getName().startsWith("get")) {
-											name =
-												method.getName().substring("get".length(), "get".length() + 1).toLowerCase() +
-												method.getName().substring("get".length() + 1);
-										} else {
-											name =
-												method.getName().substring("is".length(), "is".length() + 1).toLowerCase() +
-												method.getName().substring("is".length() + 1);
+								var name = EntityUtil.getter(method);
+								name.ifPresent(n -> {
+									GraphQLArgument.Builder argument = GraphQLArgument.newArgument();
+									argument.name(n);
+									TypeMeta innerMeta = new TypeMeta(null, method.getReturnType(), method.getGenericReturnType());
+									var argumentType = entityProcessor.getEntity(innerMeta).getInputType(innerMeta, method.getAnnotations());
+									argument.type(argumentType);
+									builder.argument(argument);
+									builders.add(object -> {
+										try {
+											return GraphQLAppliedDirectiveArgument
+												.newArgument()
+												.name(n)
+												.type(argumentType)
+												.valueProgrammatic(method.invoke(object))
+												.build();
+										} catch (IllegalAccessException | InvocationTargetException e) {
+											throw new RuntimeException(e);
 										}
-										GraphQLArgument.Builder argument = GraphQLArgument.newArgument();
-										argument.name(name);
-										TypeMeta innerMeta = new TypeMeta(null, method.getReturnType(), method.getGenericReturnType());
-										var argumentType = entityProcessor.getEntity(innerMeta).getInputType(innerMeta, method.getAnnotations());
-										argument.type(argumentType);
-										builder.argument(argument);
-										builders.add(object -> {
-											try {
-												return GraphQLAppliedDirectiveArgument
-													.newArgument()
-													.name(name)
-													.type(argumentType)
-													.valueProgrammatic(method.invoke(object))
-													.build();
-											} catch (IllegalAccessException | InvocationTargetException e) {
-												throw new RuntimeException(e);
-											}
-										});
-									}
-								}
+									});
+								});
 							} catch (RuntimeException e) {
 								throw new RuntimeException("Failed to process method " + method, e);
 							}

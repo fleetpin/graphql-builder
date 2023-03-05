@@ -1,3 +1,26 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
@@ -219,59 +242,34 @@ public abstract class TypeBuilder {
 			var type = meta.getType();
 			for (Method method : type.getMethods()) {
 				try {
-					if (method.isSynthetic()) {
+					var name = EntityUtil.getter(method);
+					if (name.isEmpty()) {
 						continue;
 					}
-					if (method.getDeclaringClass().equals(Object.class)) {
-						continue;
+
+					GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
+					field.name(name.get());
+					entityProcessor.addSchemaDirective(method, type, field::withAppliedDirective);
+					var deprecated = method.getAnnotation(GraphQLDeprecated.class);
+					if (deprecated != null) {
+						field.deprecate(deprecated.value());
 					}
-					if (method.isAnnotationPresent(GraphQLIgnore.class)) {
-						continue;
+					var description = method.getAnnotation(GraphQLDescription.class);
+					if (description != null) {
+						field.description(description.value());
 					}
-					//will also be on implementing class
-					if (Modifier.isAbstract(method.getModifiers()) || method.getDeclaringClass().isInterface()) {
-						continue;
-					}
-					if (Modifier.isStatic(method.getModifiers())) {
-						continue;
-					} else {
-						//getter type
-						if (method.getName().matches("(get|is)[A-Z].*")) {
-							String name;
-							if (method.getName().startsWith("get")) {
-								name =
-									method.getName().substring("get".length(), "get".length() + 1).toLowerCase() +
-									method.getName().substring("get".length() + 1);
-							} else {
-								name =
-									method.getName().substring("is".length(), "is".length() + 1).toLowerCase() + method.getName().substring("is".length() + 1);
-							}
 
-							GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
-							field.name(name);
-							entityProcessor.addSchemaDirective(method, type, field::withAppliedDirective);
-							var deprecated = method.getAnnotation(GraphQLDeprecated.class);
-							if (deprecated != null) {
-								field.deprecate(deprecated.value());
-							}
-							var description = method.getAnnotation(GraphQLDescription.class);
-							if (description != null) {
-								field.description(description.value());
-							}
+					TypeMeta innerMeta = new TypeMeta(meta, method.getReturnType(), method.getGenericReturnType());
 
-							TypeMeta innerMeta = new TypeMeta(meta, method.getReturnType(), method.getGenericReturnType());
+					field.type(entityProcessor.getType(innerMeta, method.getAnnotations()));
+					graphType.field(field);
+					interfaceBuilder.field(field);
 
-							field.type(entityProcessor.getType(innerMeta, method.getAnnotations()));
-							graphType.field(field);
-							interfaceBuilder.field(field);
+					var directives = entityProcessor.getDirectives();
+					var codeRegistry = entityProcessor.getCodeRegistry();
 
-							var directives = entityProcessor.getDirectives();
-							var codeRegistry = entityProcessor.getCodeRegistry();
-
-							if (method.getParameterCount() > 0 || directives.target(method, innerMeta)) {
-								codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name), buildDirectiveWrapper(directives, method, innerMeta));
-							}
-						}
+					if (method.getParameterCount() > 0 || directives.target(method, innerMeta)) {
+						codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name.get()), buildDirectiveWrapper(directives, method, innerMeta));
 					}
 				} catch (RuntimeException e) {
 					throw new RuntimeException("Failed to process method " + method, e);

@@ -1,11 +1,14 @@
-package com.fleetpin.graphql.builder;
-
-import com.fleetpin.graphql.builder.annotations.Directive;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLAppliedDirective;
-import graphql.schema.GraphQLDirective;
-import io.reactivex.rxjava3.core.Flowable;
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
 /*
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,6 +21,13 @@ import io.reactivex.rxjava3.core.Flowable;
  * the License.
  */
 
+package com.fleetpin.graphql.builder;
+
+import com.fleetpin.graphql.builder.annotations.Directive;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLDirective;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
@@ -33,11 +43,9 @@ import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.reactivestreams.FlowAdapters;
 import org.reactivestreams.Publisher;
 
 class DirectivesSchema {
@@ -164,13 +172,7 @@ class DirectivesSchema {
 		if (response instanceof List) {
 			return restrict.filter((List) response);
 		} else if (response instanceof Publisher) {
-			return CompletableFuture.completedFuture(
-				Flowable
-					.fromPublisher((Publisher) response)
-					.flatMap(entry -> {
-						return Flowable.fromCompletionStage(restrict.allow(entry)).filter(t -> t == Boolean.TRUE).map(t -> entry);
-					})
-			);
+			return CompletableFuture.completedFuture(new FilteredPublisher((Publisher) response, restrict));
 		} else if (response instanceof Optional) {
 			var optional = (Optional) response;
 			if (optional.isEmpty()) {

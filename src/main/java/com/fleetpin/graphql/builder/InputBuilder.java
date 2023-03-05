@@ -1,3 +1,15 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
@@ -108,38 +120,16 @@ public abstract class InputBuilder {
 		void processFields(Builder graphInputType) {
 			for (Method method : meta.getType().getMethods()) {
 				try {
-					if (method.isSynthetic()) {
-						continue;
-					}
-					if (method.getDeclaringClass().equals(Object.class)) {
-						continue;
-					}
-					if (method.isAnnotationPresent(GraphQLIgnore.class)) {
-						continue;
-					}
-					//will also be on implementing class
-					if (Modifier.isAbstract(method.getModifiers()) || method.getDeclaringClass().isInterface()) {
-						continue;
-					}
-					if (Modifier.isStatic(method.getModifiers())) {
-						continue;
-					} else {
-						//getter type
-						if (method.getName().matches("set[A-Z].*")) {
-							if (method.getParameterCount() == 1 && !method.isAnnotationPresent(InputIgnore.class)) {
-								String name =
-									method.getName().substring("set".length(), "set".length() + 1).toLowerCase() +
-									method.getName().substring("set".length() + 1);
-								GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
-								field.name(name);
-								entityProcessor.addSchemaDirective(method, meta.getType(), field::withAppliedDirective);
-								TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
-								var entity = entityProcessor.getEntity(innerMeta);
-								var inputType = entity.getInputType(innerMeta, method.getParameterAnnotations()[0]);
-								field.type(inputType);
-								graphInputType.field(field);
-							}
-						}
+					var name = EntityUtil.setter(method);
+					if (name.isPresent()) {
+						GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
+						field.name(name.get());
+						entityProcessor.addSchemaDirective(method, meta.getType(), field::withAppliedDirective);
+						TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
+						var entity = entityProcessor.getEntity(innerMeta);
+						var inputType = entity.getInputType(innerMeta, method.getParameterAnnotations()[0]);
+						field.type(inputType);
+						graphInputType.field(field);
 					}
 				} catch (RuntimeException e) {
 					throw new RuntimeException("Failed to process method " + method, e);
@@ -153,32 +143,10 @@ public abstract class InputBuilder {
 
 			for (Method method : meta.getType().getMethods()) {
 				try {
-					if (method.isSynthetic()) {
-						continue;
-					}
-					if (method.getDeclaringClass().equals(Object.class)) {
-						continue;
-					}
-					if (method.isAnnotationPresent(GraphQLIgnore.class)) {
-						continue;
-					}
-					//will also be on implementing class
-					if (Modifier.isAbstract(method.getModifiers()) || method.getDeclaringClass().isInterface()) {
-						continue;
-					}
-					if (Modifier.isStatic(method.getModifiers())) {
-						continue;
-					} else {
-						//getter type
-						if (method.getName().matches("set[A-Z].*")) {
-							if (method.getParameterCount() == 1 && !method.isAnnotationPresent(InputIgnore.class)) {
-								String name =
-									method.getName().substring("set".length(), "set".length() + 1).toLowerCase() +
-									method.getName().substring("set".length() + 1);
-								TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
-								fieldMappers.add(FieldMapper.build(entityProcessor, innerMeta, name, method));
-							}
-						}
+					var name = EntityUtil.setter(method);
+					if (name.isPresent()) {
+						TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
+						fieldMappers.add(FieldMapper.build(entityProcessor, innerMeta, name.get(), method));
 					}
 				} catch (RuntimeException e) {
 					throw new RuntimeException("Failed to process method " + method, e);
@@ -229,10 +197,10 @@ public abstract class InputBuilder {
 
 		@Override
 		protected InputTypeBuilder resolve() {
-			var fieldMappers = new ArrayList<RecordMapper>();
+			try {
+				var fieldMappers = new ArrayList<RecordMapper>();
 
-			for (var field : this.meta.getType().getDeclaredFields()) {
-				try {
+				for (var field : this.meta.getType().getDeclaredFields()) {
 					if (field.isSynthetic()) {
 						continue;
 					}
@@ -249,11 +217,11 @@ public abstract class InputBuilder {
 							fieldMappers.add(new RecordMapper(field.getName(), field.getType(), resolver));
 						}
 					}
-				} catch (RuntimeException e) {
-					throw new RuntimeException("Failed to process method " + field, e);
 				}
+				return new RecordFieldBuilder(meta.getType(), fieldMappers);
+			} catch (RuntimeException | ReflectiveOperationException e) {
+				throw new RuntimeException("Failed to process " + this.meta.getType(), e);
 			}
-			return new RecordFieldBuilder(meta.getType(), fieldMappers);
 		}
 	}
 }
