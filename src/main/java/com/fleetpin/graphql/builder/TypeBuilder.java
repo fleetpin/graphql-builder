@@ -98,9 +98,6 @@ public abstract class TypeBuilder {
 		innerMeta = new TypeMeta(null, type, type);
 		if (!EntityUtil.getName(innerMeta).equals(typeName)) {
 			var interfaceName = entityProcessor.getEntity(innerMeta).getInnerType(innerMeta);
-			if ("RowGroupUpdate_MiscellaneousRowGroupItem_MiscellaneousRowGroup".equals(interfaceName.getName())) {
-				System.out.println("hello");
-			}
 			graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
 			interfaceBuilder.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
 		}

@@ -237,7 +237,7 @@ public abstract class EntityHolder {
 				Object[] toReturn = (Object[]) Array.newInstance(component, collection.size());
 				int i = 0;
 				for (var c : collection) {
-					toReturn[i] = mapper.convert(c, context, locale);
+					toReturn[i++] = mapper.convert(c, context, locale);
 				}
 				return toReturn;
 			} else {
