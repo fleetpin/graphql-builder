@@ -9,20 +9,9 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-/*
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package com.fleetpin.graphql.builder;
 
+import com.fleetpin.graphql.builder.annotations.GraphQLCreator;
 import com.fleetpin.graphql.builder.annotations.OneOf;
 import com.fleetpin.graphql.builder.mapper.InputTypeBuilder;
 import graphql.schema.GraphQLNamedInputType;
@@ -35,18 +24,32 @@ public class ObjectEntity extends EntityHolder {
 	private TypeBuilder typeBuilder;
 
 	public ObjectEntity(EntityProcessor entityProcessor, TypeMeta meta) {
+		if (EntityUtil.isRecord(meta.getType())) {
+			typeBuilder = new TypeBuilder.Record(entityProcessor, meta);
+		} else {
+			typeBuilder = new TypeBuilder.ObjectType(entityProcessor, meta);
+		}
+
 		if (meta.getType().isAnnotationPresent(OneOf.class)) {
 			inputBuilder = new InputBuilder.OneOfInputBuilder(entityProcessor, meta);
 		} else if (EntityUtil.isRecord(meta.getType())) {
 			inputBuilder = new InputBuilder.Record(entityProcessor, meta);
 		} else {
+			var constructors = meta.getType().getDeclaredConstructors();
+			if (constructors.length == 1) {
+				var constructor = constructors[0];
+				if (constructor.getParameterCount() > 0) {
+					inputBuilder = new InputBuilder.ObjectConstructorType(entityProcessor, meta, constructor);
+					return;
+				}
+			}
+			for (var constructor : constructors) {
+				if (constructor.isAnnotationPresent(GraphQLCreator.class)) {
+					inputBuilder = new InputBuilder.ObjectConstructorType(entityProcessor, meta, constructor);
+					return;
+				}
+			}
 			inputBuilder = new InputBuilder.ObjectType(entityProcessor, meta);
-		}
-
-		if (EntityUtil.isRecord(meta.getType())) {
-			typeBuilder = new TypeBuilder.Record(entityProcessor, meta);
-		} else {
-			typeBuilder = new TypeBuilder.ObjectType(entityProcessor, meta);
 		}
 	}
 

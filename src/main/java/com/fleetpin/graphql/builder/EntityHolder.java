@@ -9,18 +9,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-/*
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.TypeMeta.Flag;
@@ -28,6 +16,7 @@ import com.fleetpin.graphql.builder.annotations.Id;
 import com.fleetpin.graphql.builder.annotations.Union;
 import com.fleetpin.graphql.builder.mapper.InputTypeBuilder;
 import graphql.Scalars;
+import graphql.com.google.common.collect.Sets;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLNamedInputType;
@@ -38,12 +27,17 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public abstract class EntityHolder {
@@ -172,14 +166,19 @@ public abstract class EntityHolder {
 			var type = iterator.next();
 
 			if (List.class.isAssignableFrom(type)) {
-				return processList(iterator, resolver);
+				return processCollection(ArrayList::new, iterator, resolver);
 			}
+
+			if (Set.class.isAssignableFrom(type)) {
+				return processCollection(size -> new LinkedHashSet<>((int) (size / 0.75 + 1)), iterator, resolver);
+			}
+
 			if (Optional.class.isAssignableFrom(type)) {
 				return processOptional(iterator, resolver);
 			}
-			//			if(type.isArray()) {
-			//				return processArray(iterator);
-			//			}
+			if (type.isArray()) {
+				return processArray(type, iterator, resolver);
+			}
 
 			if (iterator.hasNext()) {
 				throw new RuntimeException("Unsupported type " + type);
@@ -225,13 +224,34 @@ public abstract class EntityHolder {
 		};
 	}
 
-	private static InputTypeBuilder processList(Iterator<Class<?>> iterator, InputTypeBuilder resolver) {
+	private static InputTypeBuilder processArray(Class<?> type, Iterator<Class<?>> iterator, InputTypeBuilder resolver) {
+		var component = type.getComponentType();
+		if (component.isPrimitive()) {
+			throw new RuntimeException("Do not support primitive array");
+		}
+
 		var mapper = process(iterator, resolver);
 		return (obj, context, locale) -> {
 			if (obj instanceof Collection) {
 				var collection = (Collection) obj;
+				Object[] toReturn = (Object[]) Array.newInstance(component, collection.size());
+				int i = 0;
+				for (var c : collection) {
+					toReturn[i] = mapper.convert(c, context, locale);
+				}
+				return toReturn;
+			} else {
+				throw new RuntimeException("Expected a Collection got " + obj.getClass());
+			}
+		};
+	}
 
-				var toReturn = new ArrayList<>(collection.size());
+	private static InputTypeBuilder processCollection(Function<Integer, Collection> create, Iterator<Class<?>> iterator, InputTypeBuilder resolver) {
+		var mapper = process(iterator, resolver);
+		return (obj, context, locale) -> {
+			if (obj instanceof Collection) {
+				var collection = (Collection) obj;
+				var toReturn = create.apply(collection.size());
 				for (var c : collection) {
 					toReturn.add(mapper.convert(c, context, locale));
 				}

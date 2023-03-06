@@ -9,11 +9,34 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.fleetpin.graphql.builder.mapper;
+package com.fleetpin.graphql.builder.record;
 
-import graphql.GraphQLContext;
-import java.util.Locale;
+import com.fleetpin.graphql.builder.annotations.Query;
 
-public interface InputTypeBuilder {
-	Object convert(Object obj, GraphQLContext graphQLContext, Locale locale);
+public class Queries {
+
+	@Query
+	public static InputType passthrough(InputType type) {
+		return type;
+	}
+
+	static final class InputType {
+
+		private final String name;
+		private final int age;
+
+		private InputType(String name, int age) {
+			super();
+			this.name = name;
+			this.age = age;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public int getAge() {
+			return age;
+		}
+	}
 }

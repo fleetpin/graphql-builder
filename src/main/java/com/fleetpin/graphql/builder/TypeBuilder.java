@@ -9,18 +9,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-/*
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
@@ -73,6 +61,7 @@ public abstract class TypeBuilder {
 
 		if (unmappedGenerics) {
 			var name = EntityUtil.getName(meta.notDirect());
+
 			graphType.withInterface(GraphQLTypeReference.typeRef(name));
 			if (meta.isDirect()) {
 				interfaceBuilder.withInterface(GraphQLTypeReference.typeRef(name));
@@ -82,22 +71,19 @@ public abstract class TypeBuilder {
 		while (parent != null) {
 			if (parent.isAnnotationPresent(Entity.class)) {
 				TypeMeta innerMeta = new TypeMeta(meta, parent, type.getGenericSuperclass());
-				var interfaceName = entityProcessor.getEntity(innerMeta).getInnerType(innerMeta);
-				graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
-				interfaceBuilder.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
+				GraphQLInterfaceType interfaceName = (GraphQLInterfaceType) entityProcessor.getEntity(innerMeta).getInnerType(innerMeta);
+				addInterface(graphType, interfaceBuilder, interfaceName);
 
 				if (!parent.equals(type.getGenericSuperclass())) {
 					innerMeta = new TypeMeta(meta, parent, parent);
-					interfaceName = entityProcessor.getEntity(innerMeta).getInnerType(innerMeta);
-					graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
-					interfaceBuilder.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
+					interfaceName = (GraphQLInterfaceType) entityProcessor.getEntity(innerMeta).getInnerType(innerMeta);
+					addInterface(graphType, interfaceBuilder, interfaceName);
 				}
 
 				var genericMeta = new TypeMeta(null, parent, parent);
 				if (!EntityUtil.getName(innerMeta).equals(EntityUtil.getName(genericMeta))) {
-					interfaceName = entityProcessor.getEntity(genericMeta).getInnerType(genericMeta);
-					graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
-					interfaceBuilder.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
+					interfaceName = (GraphQLInterfaceType) entityProcessor.getEntity(genericMeta).getInnerType(genericMeta);
+					addInterface(graphType, interfaceBuilder, interfaceName);
 				}
 			}
 			parent = parent.getSuperclass();
@@ -112,6 +98,9 @@ public abstract class TypeBuilder {
 		innerMeta = new TypeMeta(null, type, type);
 		if (!EntityUtil.getName(innerMeta).equals(typeName)) {
 			var interfaceName = entityProcessor.getEntity(innerMeta).getInnerType(innerMeta);
+			if ("RowGroupUpdate_MiscellaneousRowGroupItem_MiscellaneousRowGroup".equals(interfaceName.getName())) {
+				System.out.println("hello");
+			}
 			graphType.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
 			interfaceBuilder.withInterface(GraphQLTypeReference.typeRef(interfaceName.getName()));
 		}
@@ -163,6 +152,15 @@ public abstract class TypeBuilder {
 				}
 			);
 		return built;
+	}
+
+	private void addInterface(Builder graphType, GraphQLInterfaceType.Builder interfaceBuilder, GraphQLInterfaceType interfaceName) {
+		graphType.withInterface(interfaceName);
+		for (var inner : interfaceName.getInterfaces()) {
+			graphType.withInterface(GraphQLTypeReference.typeRef(inner.getName()));
+			interfaceBuilder.withInterface(GraphQLTypeReference.typeRef(inner.getName()));
+		}
+		interfaceBuilder.withInterface(interfaceName);
 	}
 
 	protected abstract void processFields(String typeName, Builder graphType, graphql.schema.GraphQLInterfaceType.Builder interfaceBuilder)

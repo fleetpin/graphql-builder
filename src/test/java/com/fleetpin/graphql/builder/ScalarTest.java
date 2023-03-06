@@ -19,6 +19,7 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionWithDirectivesSupport;
+import graphql.scalars.ExtendedScalars;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;
@@ -68,12 +69,17 @@ public class ScalarTest {
 
 	@Test
 	public void testQueryCatFur() throws ReflectiveOperationException {
-		Map<String, Map<String, Fur>> response = execute("query fur($fur: Fur!){getCat(fur: $fur){ fur}} ", Map.of("fur", "long")).getData();
+		Map<String, Map<String, Fur>> response = execute(
+			"query fur($fur: Fur!, $age: Long!){getCat(fur: $fur, age: $age){ fur age}} ",
+			Map.of("fur", "long", "age", 2)
+		)
+			.getData();
 		var cat = response.get("getCat");
 
 		var fur = cat.get("fur");
 
 		assertEquals("long", fur.getInput());
+		assertEquals(2L, cat.get("age"));
 	}
 
 	@Test
@@ -91,7 +97,10 @@ public class ScalarTest {
 	private ExecutionResult execute(String query, Map<String, Object> variables) {
 		try {
 			GraphQL schema = GraphQL
-				.newGraphQL(new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.build("com.fleetpin.graphql.builder.scalar")))
+				.newGraphQL(
+					new IntrospectionWithDirectivesSupport()
+						.apply(SchemaBuilder.builder().classpath("com.fleetpin.graphql.builder.scalar").scalar(ExtendedScalars.GraphQLLong).build().build())
+				)
 				.build();
 			var input = ExecutionInput.newExecutionInput();
 			input.query(query);

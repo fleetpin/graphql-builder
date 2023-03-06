@@ -9,18 +9,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-/*
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Context;
@@ -42,14 +30,13 @@ import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLObjectType.Builder;
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -64,13 +51,13 @@ public class SchemaBuilder {
 
 	private final GraphQLCodeRegistry.Builder codeRegistry;
 
-	private final Builder graphQuery;
-	private final Builder graphMutations;
-	private final Builder graphSubscriptions;
+	private final GraphQLObjectType.Builder graphQuery;
+	private final GraphQLObjectType.Builder graphMutations;
+	private final GraphQLObjectType.Builder graphSubscriptions;
 
 	private final EntityProcessor entityProcessor;
 
-	private SchemaBuilder(DirectivesSchema diretives, AuthorizerSchema authorizer) {
+	private SchemaBuilder(List<GraphQLScalarType> scalars, DirectivesSchema diretives, AuthorizerSchema authorizer) {
 		this.diretives = diretives;
 		this.authorizer = authorizer;
 
@@ -82,7 +69,7 @@ public class SchemaBuilder {
 		graphSubscriptions.name("Subscriptions");
 		this.codeRegistry = GraphQLCodeRegistry.newCodeRegistry();
 
-		this.entityProcessor = new EntityProcessor(codeRegistry, diretives);
+		this.entityProcessor = new EntityProcessor(scalars, codeRegistry, diretives);
 
 		diretives.processSDL(entityProcessor);
 	}
@@ -112,7 +99,7 @@ public class SchemaBuilder {
 			field.type(type);
 			for (int i = 0; i < method.getParameterCount(); i++) {
 				GraphQLArgument.Builder argument = GraphQLArgument.newArgument();
-				if (isContext(method.getParameterTypes()[i])) {
+				if (isContext(method.getParameterTypes()[i], method.getParameterAnnotations()[i])) {
 					continue;
 				}
 
@@ -176,7 +163,12 @@ public class SchemaBuilder {
 		return builder;
 	}
 
-	private static boolean isContext(Class<?> class1) {
+	private static boolean isContext(Class<?> class1, Annotation[] annotations) {
+		for (var annotation : annotations) {
+			if (annotation instanceof Context) {
+				return true;
+			}
+		}
 		return (
 			class1.isAssignableFrom(GraphQLContext.class) || class1.isAssignableFrom(DataFetchingEnvironment.class) || class1.isAnnotationPresent(Context.class)
 		);
@@ -200,7 +192,7 @@ public class SchemaBuilder {
 			var name = method.getParameters()[i].getName();
 			var generic = method.getGenericParameterTypes()[i];
 			var argMeta = new TypeMeta(meta, type, generic);
-			resolvers[i] = buildResolver(name, argMeta);
+			resolvers[i] = buildResolver(name, argMeta, method.getParameterAnnotations()[i]);
 		}
 
 		DataFetcher<?> fetcher = env -> {
@@ -224,32 +216,37 @@ public class SchemaBuilder {
 		return fetcher;
 	}
 
-	private Function<DataFetchingEnvironment, Object> buildResolver(String name, TypeMeta argMeta) {
-		var type = argMeta.getType();
-		if (type.isAssignableFrom(DataFetchingEnvironment.class)) {
-			return env -> env;
-		}
-		if (type.isAssignableFrom(GraphQLContext.class)) {
-			return env -> env.getGraphQlContext();
+	private Function<DataFetchingEnvironment, Object> buildResolver(String name, TypeMeta argMeta, Annotation[] annotations) {
+		if (isContext(argMeta.getType(), annotations)) {
+			var type = argMeta.getType();
+			if (type.isAssignableFrom(DataFetchingEnvironment.class)) {
+				return env -> env;
+			}
+			if (type.isAssignableFrom(GraphQLContext.class)) {
+				return env -> env.getGraphQlContext();
+			}
+			return env -> {
+				var localContext = env.getLocalContext();
+				if (localContext != null && type.isAssignableFrom(localContext.getClass())) {
+					return localContext;
+				}
+
+				var context = env.getContext();
+				if (context != null && type.isAssignableFrom(context.getClass())) {
+					return context;
+				}
+
+				context = env.getGraphQlContext().get(name);
+				if (context != null && type.isAssignableFrom(context.getClass())) {
+					return context;
+				}
+				throw new RuntimeException("Context object " + name + " not found");
+			};
 		}
 
 		var resolver = entityProcessor.getResolver(argMeta);
 
 		return env -> {
-			var localContext = env.getLocalContext();
-			if (localContext != null && type.isAssignableFrom(localContext.getClass())) {
-				return localContext;
-			}
-
-			var context = env.getContext();
-			if (context != null && type.isAssignableFrom(context.getClass())) {
-				return context;
-			}
-
-			context = env.getGraphQlContext().get(name);
-			if (context != null && type.isAssignableFrom(context.getClass())) {
-				return context;
-			}
 			var arg = env.getArgument(name);
 			return resolver.convert(arg, env.getGraphQlContext(), env.getLocale());
 		};
@@ -259,58 +256,90 @@ public class SchemaBuilder {
 		return builder(classPath).build();
 	}
 
-	public static GraphQLSchema.Builder builder(String... classPath) throws ReflectiveOperationException {
-		Reflections reflections = new Reflections(classPath, Scanners.SubTypes, Scanners.MethodsAnnotated, Scanners.TypesAnnotated);
-		Set<Class<? extends Authorizer>> authorizers = reflections.getSubTypesOf(Authorizer.class);
-		//want to make everything split by package
-		AuthorizerSchema authorizer = AuthorizerSchema.build(new HashSet<>(Arrays.asList(classPath)), authorizers);
+	public static GraphQLSchema.Builder builder(String... classpath) throws ReflectiveOperationException {
+		var builder = builder();
+		for (var path : classpath) {
+			builder.classpath(path);
+		}
+		return builder.build();
+	}
 
-		Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
+	public static Builder builder() {
+		return new Builder();
+	}
 
-		Set<Class<?>> dierctivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
+	public static class Builder {
 
-		Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
-		Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
-		List<RestrictTypeFactory<?>> globalRestricts = new ArrayList<>();
+		private List<String> classpaths = new ArrayList<>();
+		private List<GraphQLScalarType> scalars = new ArrayList<>();
 
-		for (var r : restrict) {
-			Restrict annotation = r.getAnnotation(Restrict.class);
-			var factoryClass = annotation.value();
-			var factory = factoryClass.getConstructor().newInstance();
-			if (!factory.extractType().isAssignableFrom(r)) {
-				throw new RuntimeException("Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r);
-			}
-			globalRestricts.add(factory);
+		private Builder() {}
+
+		public Builder classpath(String classpath) {
+			this.classpaths.add(classpath);
+			return this;
 		}
 
-		for (var r : restricts) {
-			Restricts annotations = r.getAnnotation(Restricts.class);
-			for (Restrict annotation : annotations.value()) {
+		public Builder scalar(GraphQLScalarType scalar) {
+			this.scalars.add(scalar);
+			return this;
+		}
+
+		public GraphQLSchema.Builder build() throws ReflectiveOperationException {
+			Reflections reflections = new Reflections(classpaths, Scanners.SubTypes, Scanners.MethodsAnnotated, Scanners.TypesAnnotated);
+			Set<Class<? extends Authorizer>> authorizers = reflections.getSubTypesOf(Authorizer.class);
+			//want to make everything split by package
+			AuthorizerSchema authorizer = AuthorizerSchema.build(new HashSet<>(classpaths), authorizers);
+
+			Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
+
+			Set<Class<?>> dierctivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
+
+			Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
+			Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
+			List<RestrictTypeFactory<?>> globalRestricts = new ArrayList<>();
+
+			for (var r : restrict) {
+				Restrict annotation = r.getAnnotation(Restrict.class);
 				var factoryClass = annotation.value();
 				var factory = factoryClass.getConstructor().newInstance();
-
 				if (!factory.extractType().isAssignableFrom(r)) {
 					throw new RuntimeException("Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r);
 				}
 				globalRestricts.add(factory);
 			}
+
+			for (var r : restricts) {
+				Restricts annotations = r.getAnnotation(Restricts.class);
+				for (Restrict annotation : annotations.value()) {
+					var factoryClass = annotation.value();
+					var factory = factoryClass.getConstructor().newInstance();
+
+					if (!factory.extractType().isAssignableFrom(r)) {
+						throw new RuntimeException(
+							"Restrict annotation does match class applied to targets" + factory.extractType() + " but was on class " + r
+						);
+					}
+					globalRestricts.add(factory);
+				}
+			}
+
+			DirectivesSchema diretivesSchema = DirectivesSchema.build(globalRestricts, dierctivesTypes);
+
+			Set<Class<?>> types = reflections.getTypesAnnotatedWith(Entity.class);
+
+			var mutations = reflections.getMethodsAnnotatedWith(Mutation.class);
+			var subscriptions = reflections.getMethodsAnnotatedWith(Subscription.class);
+			var queries = reflections.getMethodsAnnotatedWith(Query.class);
+
+			var endPoints = new HashSet<>(mutations);
+			endPoints.addAll(subscriptions);
+			endPoints.addAll(queries);
+
+			types.removeIf(t -> t.getDeclaredAnnotation(Entity.class) == null);
+			types.removeIf(t -> t.isAnonymousClass());
+
+			return new SchemaBuilder(scalars, diretivesSchema, authorizer).processTypes(types).process(endPoints).build(schemaConfiguration);
 		}
-
-		DirectivesSchema diretivesSchema = DirectivesSchema.build(globalRestricts, dierctivesTypes);
-
-		Set<Class<?>> types = reflections.getTypesAnnotatedWith(Entity.class);
-
-		var mutations = reflections.getMethodsAnnotatedWith(Mutation.class);
-		var subscriptions = reflections.getMethodsAnnotatedWith(Subscription.class);
-		var queries = reflections.getMethodsAnnotatedWith(Query.class);
-
-		var endPoints = new HashSet<>(mutations);
-		endPoints.addAll(subscriptions);
-		endPoints.addAll(queries);
-
-		types.removeIf(t -> t.getDeclaredAnnotation(Entity.class) == null);
-		types.removeIf(t -> t.isAnonymousClass());
-
-		return new SchemaBuilder(diretivesSchema, authorizer).processTypes(types).process(endPoints).build(schemaConfiguration);
 	}
 }

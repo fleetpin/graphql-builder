@@ -9,18 +9,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-/*
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Scalar;
@@ -31,11 +19,13 @@ import graphql.schema.GraphQLAppliedDirective;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -48,9 +38,10 @@ public class EntityProcessor {
 
 	private final Map<String, EntityHolder> entities;
 
-	EntityProcessor(GraphQLCodeRegistry.Builder codeRegistry, DirectivesSchema diretives) {
+	EntityProcessor(List<GraphQLScalarType> scalars, GraphQLCodeRegistry.Builder codeRegistry, DirectivesSchema diretives) {
 		this.entities = new HashMap<>();
 		addDefaults();
+		addScalars(scalars);
 
 		this.codeRegistry = codeRegistry;
 		this.directives = diretives;
@@ -67,6 +58,34 @@ public class EntityProcessor {
 		put(Integer.TYPE, new ScalarEntity(Scalars.GraphQLInt));
 
 		put(String.class, new ScalarEntity(Scalars.GraphQLString));
+	}
+
+	private void addScalars(List<GraphQLScalarType> scalars) {
+		for (var scalar : scalars) {
+			var coercing = scalar.getCoercing();
+			var type = coercing.getClass();
+			for (var method : type.getMethods()) {
+				if (method.isSynthetic()) {
+					continue;
+				}
+				if ("parseValue".equals(method.getName())) {
+					var returnType = method.getReturnType();
+					if (returnType.equals(Long.class)) {
+						put(Long.TYPE, new ScalarEntity(scalar));
+					} else if (returnType.equals(Byte.class)) {
+						put(Byte.TYPE, new ScalarEntity(scalar));
+					} else if (returnType.equals(Character.class)) {
+						put(Character.TYPE, new ScalarEntity(scalar));
+					} else if (returnType.equals(Float.class)) {
+						put(Float.TYPE, new ScalarEntity(scalar));
+					} else if (returnType.equals(Short.class)) {
+						put(Short.TYPE, new ScalarEntity(scalar));
+					}
+					put(returnType, new ScalarEntity(scalar));
+					break;
+				}
+			}
+		}
 	}
 
 	private void put(Class<?> type, ScalarEntity entity) {
@@ -88,9 +107,6 @@ public class EntityProcessor {
 			name,
 			__ -> {
 				Class<?> type = meta.getType();
-				if (type.equals(Object.class)) {
-					return new ReferenceEntity("Object");
-				}
 				Type genericType = meta.getGenericType();
 				if (genericType == null) {
 					genericType = type;

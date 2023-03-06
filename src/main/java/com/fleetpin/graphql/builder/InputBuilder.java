@@ -9,7 +9,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
@@ -18,17 +17,18 @@ import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
 import com.fleetpin.graphql.builder.annotations.InputIgnore;
 import com.fleetpin.graphql.builder.annotations.OneOf;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
+import com.fleetpin.graphql.builder.mapper.ConstructorFieldBuilder;
+import com.fleetpin.graphql.builder.mapper.ConstructorFieldBuilder.RecordMapper;
 import com.fleetpin.graphql.builder.mapper.InputTypeBuilder;
 import com.fleetpin.graphql.builder.mapper.ObjectFieldBuilder;
 import com.fleetpin.graphql.builder.mapper.ObjectFieldBuilder.FieldMapper;
 import com.fleetpin.graphql.builder.mapper.OneOfBuilder;
-import com.fleetpin.graphql.builder.mapper.RecordFieldBuilder;
-import com.fleetpin.graphql.builder.mapper.RecordFieldBuilder.RecordMapper;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputObjectType.Builder;
 import graphql.schema.GraphQLNamedInputType;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -157,6 +157,47 @@ public abstract class InputBuilder {
 		}
 	}
 
+	public static class ObjectConstructorType extends InputBuilder {
+
+		private final Constructor<?> constructor;
+
+		public ObjectConstructorType(EntityProcessor entityProcessor, TypeMeta meta, Constructor<?> constructor) {
+			super(entityProcessor, meta);
+			this.constructor = constructor;
+		}
+
+		@Override
+		void processFields(Builder graphInputType) {
+			for (var parameter : constructor.getParameters()) {
+				try {
+					GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
+					field.name(parameter.getName());
+					entityProcessor.addSchemaDirective(parameter, meta.getType(), field::withAppliedDirective);
+					TypeMeta innerMeta = new TypeMeta(meta, parameter.getType(), parameter.getParameterizedType());
+					var entity = entityProcessor.getEntity(innerMeta);
+					var inputType = entity.getInputType(innerMeta, parameter.getAnnotations());
+					field.type(inputType);
+					graphInputType.field(field);
+				} catch (RuntimeException e) {
+					throw new RuntimeException("Failed to process method " + parameter, e);
+				}
+			}
+		}
+
+		@Override
+		public InputTypeBuilder resolve() {
+			var fieldMappers = new ArrayList<RecordMapper>();
+
+			for (var parameter : constructor.getParameters()) {
+				TypeMeta innerMeta = new TypeMeta(meta, parameter.getType(), parameter.getParameterizedType());
+				var resolver = entityProcessor.getResolver(innerMeta);
+				fieldMappers.add(new RecordMapper(parameter.getName(), parameter.getType(), resolver));
+			}
+
+			return new ConstructorFieldBuilder(meta.getType(), fieldMappers);
+		}
+	}
+
 	public static class Record extends InputBuilder {
 
 		public Record(EntityProcessor entityProcessor, TypeMeta meta) {
@@ -218,8 +259,8 @@ public abstract class InputBuilder {
 						}
 					}
 				}
-				return new RecordFieldBuilder(meta.getType(), fieldMappers);
-			} catch (RuntimeException | ReflectiveOperationException e) {
+				return new ConstructorFieldBuilder(meta.getType(), fieldMappers);
+			} catch (RuntimeException e) {
 				throw new RuntimeException("Failed to process " + this.meta.getType(), e);
 			}
 		}

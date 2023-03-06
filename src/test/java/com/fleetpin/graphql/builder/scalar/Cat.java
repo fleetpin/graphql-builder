@@ -19,17 +19,24 @@ public class Cat {
 
 	private final Fur fur;
 
-	private Cat(Fur fur) {
+	private long age;
+
+	private Cat(Fur fur, long age) {
 		this.fur = fur;
+		this.age = age;
 	}
 
 	public Fur getFur() {
 		return fur;
 	}
 
+	public long getAge() {
+		return age;
+	}
+
 	@Query
-	public static Cat getCat(Fur fur) {
-		return new Cat(fur);
+	public static Cat getCat(Fur fur, Long age) {
+		return new Cat(fur, age);
 	}
 
 	@Query

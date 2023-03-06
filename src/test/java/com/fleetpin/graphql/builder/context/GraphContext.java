@@ -9,11 +9,21 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.fleetpin.graphql.builder.mapper;
+package com.fleetpin.graphql.builder.context;
 
-import graphql.GraphQLContext;
-import java.util.Locale;
+import com.fleetpin.graphql.builder.annotations.Context;
 
-public interface InputTypeBuilder {
-	Object convert(Object obj, GraphQLContext graphQLContext, Locale locale);
+@Context
+public class GraphContext {
+
+	private final String something;
+
+	public GraphContext(String something) {
+		super();
+		this.something = something;
+	}
+
+	public String getSomething() {
+		return something;
+	}
 }
