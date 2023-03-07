@@ -36,19 +36,13 @@ public class RecordTest {
 	}
 
 	private ExecutionResult execute(String query, Map<String, Object> variables) {
-		try {
-			GraphQL schema = GraphQL
-				.newGraphQL(new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.build("com.fleetpin.graphql.builder.record")))
-				.build();
-			var input = ExecutionInput.newExecutionInput();
-			input.query(query);
-			if (variables != null) {
-				input.variables(variables);
-			}
-			ExecutionResult result = schema.execute(input);
-			return result;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+		GraphQL schema = GraphQL.newGraphQL(new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.build("com.fleetpin.graphql.builder.record"))).build();
+		var input = ExecutionInput.newExecutionInput();
+		input.query(query);
+		if (variables != null) {
+			input.variables(variables);
 		}
+		ExecutionResult result = schema.execute(input);
+		return result;
 	}
 }

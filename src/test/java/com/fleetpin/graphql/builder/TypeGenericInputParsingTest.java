@@ -195,15 +195,11 @@ public class TypeGenericInputParsingTest {
 	}
 
 	private ExecutionResult execute(String query) {
-		try {
-			GraphQL schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.inputgenerics")).build();
-			ExecutionResult result = schema.execute(query);
-			if (!result.getErrors().isEmpty()) {
-				throw new RuntimeException(result.getErrors().toString());
-			}
-			return result;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+		GraphQL schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.inputgenerics")).build();
+		ExecutionResult result = schema.execute(query);
+		if (!result.getErrors().isEmpty()) {
+			throw new RuntimeException(result.getErrors().toString());
 		}
+		return result;
 	}
 }

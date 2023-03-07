@@ -12,9 +12,16 @@
 package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import graphql.ExecutionInput;
+import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.introspection.IntrospectionWithDirectivesSupport;
+import graphql.scalars.ExtendedScalars;
 import graphql.schema.FieldCoordinates;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class DirectiveTest {
@@ -36,5 +43,35 @@ public class DirectiveTest {
 		var argument = capture.getArgument("color");
 		var color = argument.getValue();
 		assertEquals("top", color);
+	}
+
+	@Test
+	public void testDirectivePass() throws ReflectiveOperationException {
+		Map<String, Object> response = execute("query allowed($name: String!){allowed(name: $name)} ", Map.of("name", "tabby")).getData();
+		assertEquals("tabby", response.get("allowed"));
+	}
+
+	@Test
+	public void testDirectiveFail() throws ReflectiveOperationException {
+		var response = execute("query allowed($name: String!){allowed(name: $name)} ", Map.of("name", "calico"));
+
+		assertNull(response.getData());
+
+		assertTrue(response.getErrors().get(0).getMessage().contains("forbidden"));
+	}
+
+	private ExecutionResult execute(String query, Map<String, Object> variables) {
+		GraphQL schema = GraphQL
+			.newGraphQL(
+				new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.builder().classpath("com.fleetpin.graphql.builder.type.directive").build().build())
+			)
+			.build();
+		var input = ExecutionInput.newExecutionInput();
+		input.query(query);
+		if (variables != null) {
+			input.variables(variables);
+		}
+		ExecutionResult result = schema.execute(input);
+		return result;
 	}
 }

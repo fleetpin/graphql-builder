@@ -33,17 +33,17 @@ import java.util.stream.Collectors;
 
 public class EntityProcessor {
 
-	private final GraphQLCodeRegistry.Builder codeRegistry;
 	private final DirectivesSchema directives;
 
 	private final Map<String, EntityHolder> entities;
+	private final MethodProcessor methodProcessor;
 
-	EntityProcessor(List<GraphQLScalarType> scalars, GraphQLCodeRegistry.Builder codeRegistry, DirectivesSchema diretives) {
+	EntityProcessor(List<GraphQLScalarType> scalars, DirectivesSchema diretives) {
+		this.methodProcessor = new MethodProcessor(this, diretives);
 		this.entities = new HashMap<>();
 		addDefaults();
 		addScalars(scalars);
 
-		this.codeRegistry = codeRegistry;
 		this.directives = diretives;
 	}
 
@@ -163,14 +163,6 @@ public class EntityProcessor {
 		this.directives.addSchemaDirective(element, location, builder);
 	}
 
-	DirectivesSchema getDirectives() {
-		return directives;
-	}
-
-	GraphQLCodeRegistry.Builder getCodeRegistry() {
-		return codeRegistry;
-	}
-
 	public InputTypeBuilder getResolver(TypeMeta meta) {
 		return getEntity(meta).getResolver(meta);
 	}
@@ -178,5 +170,13 @@ public class EntityProcessor {
 	public InputTypeBuilder getResolver(Class<?> type) {
 		var meta = new TypeMeta(null, type, type);
 		return getEntity(meta).getResolver(meta);
+	}
+
+	GraphQLCodeRegistry.Builder getCodeRegistry() {
+		return this.methodProcessor.getCodeRegistry();
+	}
+
+	MethodProcessor getMethodProcessor() {
+		return methodProcessor;
 	}
 }

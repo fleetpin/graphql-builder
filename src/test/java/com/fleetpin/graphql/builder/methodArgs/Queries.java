@@ -9,35 +9,38 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.fleetpin.graphql.builder.type.directive;
+package com.fleetpin.graphql.builder.methodArgs;
 
-import com.fleetpin.graphql.builder.annotations.Entity;
 import com.fleetpin.graphql.builder.annotations.Query;
 
-@Entity
-public class Cat {
-
-	public boolean isCalico() {
-		return true;
-	}
-
-	public int getAge() {
-		return 3;
-	}
-
-	public boolean getFur() {
-		return true;
-	}
+public class Queries {
 
 	@Query
-	@Capture("meow")
-	public static Cat getCat() {
-		return new Cat();
+	public static InputType passthrough(InputType type) {
+		return type;
 	}
 
-	@Query
-	@Admin("tabby")
-	public static String allowed(String name) {
-		return name;
+	static final class InputType {
+
+		private final String name;
+		private final int age;
+
+		private InputType(String name, int age) {
+			super();
+			this.name = name;
+			this.age = age;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public int getAge() {
+			return age;
+		}
+
+		public int getHeight(int height) {
+			return height;
+		}
 	}
 }

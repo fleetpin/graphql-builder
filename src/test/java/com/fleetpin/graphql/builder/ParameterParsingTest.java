@@ -88,6 +88,12 @@ public class ParameterParsingTest {
 	}
 
 	@Test
+	public void testRequiredArrayString() throws ReflectiveOperationException {
+		Map<String, List<List<String>>> response = execute("query {requiredArrayString(type: [\"free\"])} ").getData();
+		assertEquals(Arrays.asList("free"), response.get("requiredArrayString"));
+	}
+
+	@Test
 	public void testOptionalListStringEmpty() throws ReflectiveOperationException {
 		Map<String, List<List<String>>> response = execute("query {optionalListString(type: [])} ").getData();
 		assertEquals(Collections.emptyList(), response.get("optionalListString"));

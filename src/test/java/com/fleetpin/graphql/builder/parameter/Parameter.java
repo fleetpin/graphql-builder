@@ -57,6 +57,11 @@ public class Parameter {
 	}
 
 	@Query
+	public static String[] requiredArrayString(String[] type) {
+		return type;
+	}
+
+	@Query
 	public static Optional<List<String>> optionalListString(Optional<List<String>> type) {
 		return type;
 	}

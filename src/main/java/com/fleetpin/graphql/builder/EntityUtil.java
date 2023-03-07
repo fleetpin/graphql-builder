@@ -11,16 +11,20 @@
  */
 package com.fleetpin.graphql.builder;
 
+import com.fleetpin.graphql.builder.annotations.Context;
 import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
 import com.fleetpin.graphql.builder.annotations.InputIgnore;
 import com.fleetpin.graphql.builder.mapper.ObjectFieldBuilder.FieldMapper;
+import graphql.GraphQLContext;
+import graphql.schema.DataFetchingEnvironment;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
 import java.util.Optional;
 
-public class EntityUtil {
+class EntityUtil {
 
 	private static final Method IS_RECORD_METHOD;
 
@@ -136,5 +140,16 @@ public class EntityUtil {
 			}
 		}
 		return Optional.empty();
+	}
+
+	static boolean isContext(Class<?> class1, Annotation[] annotations) {
+		for (var annotation : annotations) {
+			if (annotation instanceof Context) {
+				return true;
+			}
+		}
+		return (
+			class1.isAssignableFrom(GraphQLContext.class) || class1.isAssignableFrom(DataFetchingEnvironment.class) || class1.isAnnotationPresent(Context.class)
+		);
 	}
 }

@@ -12,48 +12,34 @@
 package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.introspection.IntrospectionWithDirectivesSupport;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-public class AuthorizerTest {
+//does not test all of records as needs newer version of java. But Classes that look like records
+public class methodArgsTest {
 
 	@Test
-	public void testQueryCatAllowed() throws ReflectiveOperationException {
-		var result = execute("query {getCat(name: \"socks\") {age}}");
-		Map<String, Map<String, Object>> response = result.getData();
+	public void testEntireContext() {
+		var type = Map.of("name", "foo", "age", 4);
+		Map<String, Map<String, Object>> response = execute(
+			"query passthrough($type: InputTypeInput!){passthrough(type: $type) {name age height(height: 12)}} ",
+			Map.of("type", type)
+		)
+			.getData();
+		var passthrough = response.get("passthrough");
 
-		var cat = response.get("getCat");
-
-		assertEquals(3, cat.get("age"));
-
-		assertTrue(result.getErrors().isEmpty());
-	}
-
-	@Test
-	public void testQueryCatNotAllowed() throws ReflectiveOperationException {
-		var result = execute("query {getCat(name: \"boots\") {age}}");
-
-		assertNull(result.getData());
-
-		assertEquals(1, result.getErrors().size());
-		var error = result.getErrors().get(0);
-
-		assertEquals("Exception while fetching data (/getCat) : unauthorized", error.getMessage());
-		//assertEquals("", error.getErrorType());
-	}
-
-	private ExecutionResult execute(String query) {
-		return execute(query, null);
+		assertEquals(Map.of("name", "foo", "age", 4, "height", 12), passthrough);
 	}
 
 	private ExecutionResult execute(String query, Map<String, Object> variables) {
-		GraphQL schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.authorizer")).build();
+		GraphQL schema = GraphQL
+			.newGraphQL(new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.build("com.fleetpin.graphql.builder.methodArgs")))
+			.build();
 		var input = ExecutionInput.newExecutionInput();
 		input.query(query);
 		if (variables != null) {

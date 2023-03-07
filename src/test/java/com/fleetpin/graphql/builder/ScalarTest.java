@@ -95,25 +95,21 @@ public class ScalarTest {
 	}
 
 	private ExecutionResult execute(String query, Map<String, Object> variables) {
-		try {
-			GraphQL schema = GraphQL
-				.newGraphQL(
-					new IntrospectionWithDirectivesSupport()
-						.apply(SchemaBuilder.builder().classpath("com.fleetpin.graphql.builder.scalar").scalar(ExtendedScalars.GraphQLLong).build().build())
-				)
-				.build();
-			var input = ExecutionInput.newExecutionInput();
-			input.query(query);
-			if (variables != null) {
-				input.variables(variables);
-			}
-			ExecutionResult result = schema.execute(input);
-			if (!result.getErrors().isEmpty()) {
-				throw new RuntimeException(result.getErrors().toString()); //TODO:cleanup
-			}
-			return result;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+		GraphQL schema = GraphQL
+			.newGraphQL(
+				new IntrospectionWithDirectivesSupport()
+					.apply(SchemaBuilder.builder().classpath("com.fleetpin.graphql.builder.scalar").scalar(ExtendedScalars.GraphQLLong).build().build())
+			)
+			.build();
+		var input = ExecutionInput.newExecutionInput();
+		input.query(query);
+		if (variables != null) {
+			input.variables(variables);
 		}
+		ExecutionResult result = schema.execute(input);
+		if (!result.getErrors().isEmpty()) {
+			throw new RuntimeException(result.getErrors().toString()); //TODO:cleanup
+		}
+		return result;
 	}
 }

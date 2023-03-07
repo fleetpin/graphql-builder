@@ -67,17 +67,13 @@ public class ContextTest {
 	}
 
 	private ExecutionResult execute(String query, Consumer<ExecutionInput.Builder> modify) {
-		try {
-			GraphQL schema = GraphQL
-				.newGraphQL(new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.build("com.fleetpin.graphql.builder.context")))
-				.build();
-			var input = ExecutionInput.newExecutionInput();
-			input.query(query);
-			modify.accept(input);
-			ExecutionResult result = schema.execute(input);
-			return result;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
-		}
+		GraphQL schema = GraphQL
+			.newGraphQL(new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.build("com.fleetpin.graphql.builder.context")))
+			.build();
+		var input = ExecutionInput.newExecutionInput();
+		input.query(query);
+		modify.accept(input);
+		ExecutionResult result = schema.execute(input);
+		return result;
 	}
 }

@@ -12,22 +12,16 @@
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
-import com.fleetpin.graphql.builder.annotations.GraphQLDeprecated;
 import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
 import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
-import com.fleetpin.graphql.builder.annotations.Scalar;
-import graphql.schema.DataFetcher;
 import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLObjectType.Builder;
 import graphql.schema.GraphQLTypeReference;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.TypeVariable;
 
 public abstract class TypeBuilder {
 
@@ -163,68 +157,6 @@ public abstract class TypeBuilder {
 	protected abstract void processFields(String typeName, Builder graphType, graphql.schema.GraphQLInterfaceType.Builder interfaceBuilder)
 		throws ReflectiveOperationException;
 
-	private static <T extends Annotation> DataFetcher<?> buildDirectiveWrapper(DirectivesSchema diretives, Method method, TypeMeta meta) {
-		DataFetcher<?> fetcher = env -> {
-			Object[] args = new Object[method.getParameterCount()];
-			for (int i = 0; i < args.length; i++) {
-				if (method.getParameterTypes()[i].isAssignableFrom(env.getClass())) {
-					args[i] = env;
-				} else if (method.getParameterTypes()[i].isAssignableFrom(env.getContext().getClass())) {
-					args[i] = env.getContext();
-				} else {
-					Object obj = env.getArgument(method.getParameters()[i].getName());
-					args[i] = obj;
-				}
-			}
-			try {
-				return method.invoke(env.getSource(), args);
-			} catch (Exception e) {
-				if (e.getCause() instanceof Exception) {
-					throw (Exception) e.getCause();
-				} else {
-					throw e;
-				}
-			}
-		};
-
-		fetcher = diretives.wrap(method, meta, fetcher);
-		return fetcher;
-	}
-
-	private String typeNameLookup(Object obj) {
-		var type = obj.getClass();
-		String name = null;
-
-		if (type.isEnum()) {
-			name = type.getSimpleName();
-		}
-		if (type.isAnnotationPresent(Scalar.class)) {
-			name = type.getSimpleName();
-		}
-		if (type.isAnnotationPresent(Entity.class)) {
-			name = type.getSimpleName();
-		}
-
-		for (var t : type.getTypeParameters()) {
-			for (var method : type.getMethods()) {
-				var methodType = method.getGenericReturnType();
-				if (methodType instanceof TypeVariable) {
-					var typeVariable = ((TypeVariable) methodType);
-					if (typeVariable.equals(t)) {
-						//maybe we should dig through private fields first
-						try {
-							name += "_" + typeNameLookup(method.invoke(obj));
-						} catch (ReflectiveOperationException e) {
-							throw new RuntimeException("Could not infer type with regard to generics.");
-						} //TODO: might have arguments might be a future which would make impossible to resolve
-					}
-				}
-			}
-		}
-
-		return name;
-	}
-
 	public static class ObjectType extends TypeBuilder {
 
 		public ObjectType(EntityProcessor entityProcessor, TypeMeta meta) {
@@ -241,31 +173,9 @@ public abstract class TypeBuilder {
 					if (name.isEmpty()) {
 						continue;
 					}
-
-					GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
-					field.name(name.get());
-					entityProcessor.addSchemaDirective(method, type, field::withAppliedDirective);
-					var deprecated = method.getAnnotation(GraphQLDeprecated.class);
-					if (deprecated != null) {
-						field.deprecate(deprecated.value());
-					}
-					var description = method.getAnnotation(GraphQLDescription.class);
-					if (description != null) {
-						field.description(description.value());
-					}
-
-					TypeMeta innerMeta = new TypeMeta(meta, method.getReturnType(), method.getGenericReturnType());
-
-					field.type(entityProcessor.getType(innerMeta, method.getAnnotations()));
-					graphType.field(field);
-					interfaceBuilder.field(field);
-
-					var directives = entityProcessor.getDirectives();
-					var codeRegistry = entityProcessor.getCodeRegistry();
-
-					if (method.getParameterCount() > 0 || directives.target(method, innerMeta)) {
-						codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, name.get()), buildDirectiveWrapper(directives, method, innerMeta));
-					}
+					var f = entityProcessor.getMethodProcessor().process(null, FieldCoordinates.coordinates(typeName, name.get()), meta, method);
+					graphType.field(f);
+					interfaceBuilder.field(f);
 				} catch (RuntimeException e) {
 					throw new RuntimeException("Failed to process method " + method, e);
 				}
@@ -309,30 +219,9 @@ public abstract class TypeBuilder {
 						//getter type
 						String name = field.getName();
 
-						GraphQLFieldDefinition.Builder fieldBuilder = GraphQLFieldDefinition.newFieldDefinition();
-						fieldBuilder.name(name);
-						entityProcessor.addSchemaDirective(method, type, fieldBuilder::withAppliedDirective);
-						var deprecated = field.getAnnotation(GraphQLDeprecated.class);
-						if (deprecated != null) {
-							fieldBuilder.deprecate(deprecated.value());
-						}
-						var description = field.getAnnotation(GraphQLDescription.class);
-						if (description != null) {
-							fieldBuilder.description(description.value());
-						}
-
-						TypeMeta innerMeta = new TypeMeta(meta, method.getReturnType(), method.getGenericReturnType());
-						fieldBuilder.type(entityProcessor.getType(innerMeta, method.getAnnotations()));
-						graphType.field(fieldBuilder);
-						interfaceBuilder.field(fieldBuilder);
-
-						var directives = entityProcessor.getDirectives();
-
-						if (method.getParameterCount() > 0 || directives.target(method, innerMeta)) {
-							entityProcessor
-								.getCodeRegistry()
-								.dataFetcher(FieldCoordinates.coordinates(typeName, name), buildDirectiveWrapper(directives, method, innerMeta));
-						}
+						var f = entityProcessor.getMethodProcessor().process(null, FieldCoordinates.coordinates(typeName, name), meta, method);
+						graphType.field(f);
+						interfaceBuilder.field(f);
 					}
 				} catch (RuntimeException e) {
 					throw new RuntimeException("Failed to process method " + field, e);
