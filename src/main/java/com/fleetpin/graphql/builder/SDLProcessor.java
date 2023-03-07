@@ -11,7 +11,6 @@
  */
 package com.fleetpin.graphql.builder;
 
-import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
 import graphql.schema.GraphQLAppliedDirective;
 import graphql.schema.GraphQLAppliedDirectiveArgument;
 import graphql.schema.GraphQLArgument;
@@ -19,7 +18,6 @@ import graphql.schema.GraphQLDirective;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;

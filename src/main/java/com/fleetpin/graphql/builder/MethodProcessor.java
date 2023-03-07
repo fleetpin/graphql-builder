@@ -101,7 +101,6 @@ class MethodProcessor {
 			field.argument(argument);
 		}
 
-		diretives.addSchemaDirective(method, method.getDeclaringClass(), field::withAppliedDirective);
 		DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
 		codeRegistry.dataFetcher(coordinates, fetcher);
 		return field;
