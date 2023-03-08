@@ -44,9 +44,9 @@
 	</distributionManagement>
 
 	<scm>
-		<url>https://github.com/fleetpin/graphql-builder</url>
-		<connection>scm:git:https://github.com/fleetpin/graphql-builder.git</connection>
-		<developerConnection>scm:git:https://github.com/fleetpin/graphql-builder.git</developerConnection>
+		<url>https://github.com/ashley-taylor/graphql-builder</url>
+		<connection>scm:git:https://github.com/ashley-taylor/graphql-builder.git</connection>
+		<developerConnection>scm:git:https://github.com/ashley-taylor/graphql-builder.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 
