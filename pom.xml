@@ -15,11 +15,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.fleetpin</groupId>
 	<artifactId>graphql-builder</artifactId>
-	<version>2.0.0-SNAPSHOT</version>
+	<version>2.0.1-SNAPSHOT</version>
 
 	<name>GraphQL Builder</name>
 	<description>Builds a graphql schema from a model using reflection</description>
-	<url>https://github.com/fleetpin/graphql-builder</url>
+	<url>https://github.com/ashley-taylor/graphql-builder</url>
 
 	<properties>
 		<junit.jupiter.version>5.6.0</junit.jupiter.version>
@@ -44,9 +44,9 @@
 	</distributionManagement>
 
 	<scm>
-		<url>https://github.com/fleetpin/graphql-builder</url>
-		<connection>scm:git:https://github.com/fleetpin/graphql-builder.git</connection>
-		<developerConnection>scm:git:https://github.com/fleetpin/graphql-builder.git</developerConnection>
+		<url>https://github.com/ashley-taylor/graphql-builder</url>
+		<connection>scm:git:https://github.com/ashley-taylor/graphql-builder.git</connection>
+		<developerConnection>scm:git:https://github.com/ashley-taylor/graphql-builder.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 
