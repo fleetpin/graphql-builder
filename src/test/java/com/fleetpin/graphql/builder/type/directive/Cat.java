@@ -36,6 +36,12 @@ public class Cat {
 	}
 
 	@Query
+	@Uppercase
+	public static Cat getUpper() {
+		return new Cat();
+	}
+
+	@Query
 	@Admin("tabby")
 	public static String allowed(String name) {
 		return name;

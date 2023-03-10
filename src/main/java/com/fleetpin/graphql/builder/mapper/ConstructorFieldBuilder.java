@@ -34,10 +34,7 @@ public class ConstructorFieldBuilder implements InputTypeBuilder {
 
 						for (int i = 0; i < args.length; i++) {
 							var mapper = mappers.get(i);
-
-							if (map.containsKey(mapper.name)) {
-								args[i] = mapper.resolver.convert(map.get(mapper.name), context, locale);
-							}
+							args[i] = mapper.resolver.convert(map.get(mapper.name), context, locale);
 						}
 
 						return constructor.newInstance(args);

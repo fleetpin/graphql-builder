@@ -12,6 +12,7 @@
 package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,7 +20,6 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionWithDirectivesSupport;
-import graphql.scalars.ExtendedScalars;
 import graphql.schema.FieldCoordinates;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,15 @@ public class DirectiveTest {
 		var argument = capture.getArgument("color");
 		var color = argument.getValue();
 		assertEquals("meow", color);
+	}
+
+	@Test
+	public void testNoArgumentDirective() throws ReflectiveOperationException {
+		GraphQL schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.type.directive")).build();
+		var cat = schema.getGraphQLSchema().getFieldDefinition(FieldCoordinates.coordinates(schema.getGraphQLSchema().getQueryType(), "getUpper"));
+		var uppercase = cat.getAppliedDirective("Uppercase");
+		assertNotNull(uppercase);
+		assertTrue(uppercase.getArguments().isEmpty());
 	}
 
 	@Test

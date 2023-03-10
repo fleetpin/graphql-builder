@@ -26,6 +26,10 @@ public class OneOfBuilder implements InputTypeBuilder {
 		Map<String, InputTypeBuilder> builders = new HashMap<>();
 
 		for (var typeOf : oneOf.value()) {
+			if (!type.isAssignableFrom(typeOf.type())) {
+				throw new RuntimeException("OneOf on " + type + " can not support type " + typeOf);
+			}
+
 			builders.put(typeOf.name(), entityProcessor.getResolver(typeOf.type()));
 		}
 

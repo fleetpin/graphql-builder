@@ -17,6 +17,7 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionWithDirectivesSupport;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -27,12 +28,14 @@ public class RecordTest {
 	public void testEntireContext() {
 		var type = Map.of("name", "foo", "age", 4);
 		Map<String, Map<String, Object>> response = execute(
-			"query passthrough($type: InputTypeInput!){passthrough(type: $type) {name age}} ",
+			"query passthrough($type: InputTypeInput!){passthrough(type: $type) {name age weight}} ",
 			Map.of("type", type)
 		)
 			.getData();
 		var passthrough = response.get("passthrough");
-		assertEquals(type, passthrough);
+		var expected = new HashMap<>(type);
+		expected.put("weight", null);
+		assertEquals(expected, passthrough);
 	}
 
 	private ExecutionResult execute(String query, Map<String, Object> variables) {

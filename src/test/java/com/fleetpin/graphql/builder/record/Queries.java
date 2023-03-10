@@ -12,6 +12,7 @@
 package com.fleetpin.graphql.builder.record;
 
 import com.fleetpin.graphql.builder.annotations.Query;
+import java.util.Optional;
 
 public class Queries {
 
@@ -24,11 +25,13 @@ public class Queries {
 
 		private final String name;
 		private final int age;
+		private final Optional<Integer> weight;
 
-		private InputType(String name, int age) {
+		private InputType(String name, int age, Optional<Integer> weight) {
 			super();
 			this.name = name;
 			this.age = age;
+			this.weight = weight;
 		}
 
 		public String getName() {
@@ -37,6 +40,10 @@ public class Queries {
 
 		public int getAge() {
 			return age;
+		}
+
+		public Optional<Integer> getWeight() {
+			return weight;
 		}
 	}
 }
