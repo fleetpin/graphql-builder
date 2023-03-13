@@ -27,8 +27,6 @@ public class ScalarEntity extends EntityHolder {
 		this.scalar = scalar;
 	}
 
-	//
-
 	public ScalarEntity(DirectivesSchema directives, TypeMeta meta) throws ReflectiveOperationException {
 		GraphQLScalarType.Builder scalarType = GraphQLScalarType.newScalar();
 		String typeName = EntityUtil.getName(meta);

@@ -125,7 +125,7 @@ public abstract class InputBuilder {
 						GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
 						field.name(name.get());
 						entityProcessor.addSchemaDirective(method, meta.getType(), field::withAppliedDirective);
-						TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
+						TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0], method.getParameters()[0]);
 						var entity = entityProcessor.getEntity(innerMeta);
 						var inputType = entity.getInputType(innerMeta, method.getParameterAnnotations()[0]);
 						field.type(inputType);
@@ -145,7 +145,7 @@ public abstract class InputBuilder {
 				try {
 					var name = EntityUtil.setter(method);
 					if (name.isPresent()) {
-						TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0]);
+						TypeMeta innerMeta = new TypeMeta(meta, method.getParameterTypes()[0], method.getGenericParameterTypes()[0], method.getParameters()[0]);
 						fieldMappers.add(FieldMapper.build(entityProcessor, innerMeta, name.get(), method));
 					}
 				} catch (RuntimeException e) {
@@ -173,7 +173,7 @@ public abstract class InputBuilder {
 					GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
 					field.name(parameter.getName());
 					entityProcessor.addSchemaDirective(parameter, meta.getType(), field::withAppliedDirective);
-					TypeMeta innerMeta = new TypeMeta(meta, parameter.getType(), parameter.getParameterizedType());
+					TypeMeta innerMeta = new TypeMeta(meta, parameter.getType(), parameter.getParameterizedType(), parameter);
 					var entity = entityProcessor.getEntity(innerMeta);
 					var inputType = entity.getInputType(innerMeta, parameter.getAnnotations());
 					field.type(inputType);
@@ -189,7 +189,7 @@ public abstract class InputBuilder {
 			var fieldMappers = new ArrayList<RecordMapper>();
 
 			for (var parameter : constructor.getParameters()) {
-				TypeMeta innerMeta = new TypeMeta(meta, parameter.getType(), parameter.getParameterizedType());
+				TypeMeta innerMeta = new TypeMeta(meta, parameter.getType(), parameter.getParameterizedType(), parameter);
 				var resolver = entityProcessor.getResolver(innerMeta);
 				fieldMappers.add(new RecordMapper(parameter.getName(), parameter.getType(), resolver));
 			}
@@ -223,7 +223,7 @@ public abstract class InputBuilder {
 							GraphQLInputObjectField.Builder fieldBuilder = GraphQLInputObjectField.newInputObjectField();
 							fieldBuilder.name(name);
 							entityProcessor.addSchemaDirective(field, meta.getType(), fieldBuilder::withAppliedDirective);
-							TypeMeta innerMeta = new TypeMeta(meta, field.getType(), field.getGenericType());
+							TypeMeta innerMeta = new TypeMeta(meta, field.getType(), field.getGenericType(), field);
 							var entity = entityProcessor.getEntity(innerMeta);
 							var inputType = entity.getInputType(innerMeta, field.getAnnotations());
 							fieldBuilder.type(inputType);
@@ -253,7 +253,7 @@ public abstract class InputBuilder {
 					} else {
 						//getter type
 						if (!field.isAnnotationPresent(InputIgnore.class)) {
-							TypeMeta innerMeta = new TypeMeta(meta, field.getType(), field.getGenericType());
+							TypeMeta innerMeta = new TypeMeta(meta, field.getType(), field.getGenericType(), field);
 							var resolver = entityProcessor.getResolver(innerMeta);
 							fieldMappers.add(new RecordMapper(field.getName(), field.getType(), resolver));
 						}

@@ -12,12 +12,17 @@
 package com.fleetpin.graphql.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionWithDirectivesSupport;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +41,42 @@ public class RecordTest {
 		var expected = new HashMap<>(type);
 		expected.put("weight", null);
 		assertEquals(expected, passthrough);
+	}
+
+	@Test
+	public void testNullable() {
+		var response = execute("query nullableTest($type: Boolean){nullableTest(type: $type)} ", null);
+		var expected = new HashMap<String, String>();
+		expected.put("nullableTest", null);
+		assertEquals(expected, response.getData());
+		assertTrue(response.getErrors().isEmpty());
+	}
+
+	@Test
+	public void testSetNullable() {
+		Map<String, Boolean> response = execute("query nullableTest($type: Boolean){nullableTest(type: $type)}", Map.of("type", true)).getData();
+		var passthrough = response.get("nullableTest");
+		assertEquals(true, passthrough);
+	}
+
+	@Test
+	public void testNullableArray() {
+		List<Boolean> array = new ArrayList<>();
+		array.add(null);
+		array.add(true);
+		var response = execute("query nullableArrayTest($type: [Boolean]!){nullableArrayTest(type: $type)}", Map.of("type", array));
+		var expected = new HashMap<String, List<Boolean>>();
+		expected.put("nullableArrayTest", array);
+		assertTrue(response.getErrors().isEmpty());
+		assertEquals(expected, response.getData());
+	}
+
+	@Test
+	public void testNullableArrayFails() {
+		List<Boolean> array = new ArrayList<>();
+		array.add(true);
+		var response = execute("query nullableArrayTest($type: [Boolean]){nullableArrayTest(type: $type)}", Map.of("type", array));
+		assertFalse(response.getErrors().isEmpty());
 	}
 
 	private ExecutionResult execute(String query, Map<String, Object> variables) {

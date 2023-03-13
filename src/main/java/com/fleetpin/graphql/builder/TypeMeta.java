@@ -11,6 +11,7 @@
  */
 package com.fleetpin.graphql.builder;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -21,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 
 public class TypeMeta {
@@ -44,24 +46,31 @@ public class TypeMeta {
 
 	private List<Class<?>> types;
 
+	private AnnotatedElement element;
+
 	TypeMeta(TypeMeta parent, Class<?> type, Type genericType) {
+		this(parent, type, genericType, null);
+	}
+
+	TypeMeta(TypeMeta parent, Class<?> type, Type genericType, AnnotatedElement element) {
 		this.parent = parent;
+		this.element = element;
 		flags = new ArrayList<>();
 		types = new ArrayList<>();
-		process(type, genericType);
+		process(type, genericType, element);
 		Collections.reverse(flags);
 	}
 
-	private void processGeneric(TypeMeta target, TypeVariable type) {
+	private void processGeneric(TypeMeta target, TypeVariable type, AnnotatedElement element) {
 		var owningClass = target.genericType;
 		if (owningClass == null) {
 			owningClass = target.type;
 		}
 		if (owningClass instanceof Class) {
-			findType(target, type, (Class) owningClass);
+			findType(target, type, (Class) owningClass, element);
 		} else if (owningClass instanceof ParameterizedType) {
 			var pt = (ParameterizedType) owningClass;
-			if (!matchType(target, type.getTypeName(), pt, true)) {
+			if (!matchType(target, type.getTypeName(), pt, true, element)) {
 				throw new UnsupportedOperationException("Does not handle type " + owningClass);
 			}
 		} else {
@@ -69,7 +78,7 @@ public class TypeMeta {
 		}
 	}
 
-	private boolean matchType(TypeMeta target, String typeName, ParameterizedType type, boolean parent) {
+	private boolean matchType(TypeMeta target, String typeName, ParameterizedType type, boolean parent, AnnotatedElement element) {
 		var raw = (Class) type.getRawType();
 		while (raw != null) {
 			for (int i = 0; i < raw.getTypeParameters().length; i++) {
@@ -78,25 +87,25 @@ public class TypeMeta {
 				if (param.getTypeName().equals(typeName)) {
 					if (arg instanceof TypeVariable) {
 						if (parent) {
-							processGeneric(target.parent, (TypeVariable) arg);
+							processGeneric(target.parent, (TypeVariable) arg, element);
 						} else {
-							processGeneric(target, (TypeVariable) arg);
+							processGeneric(target, (TypeVariable) arg, element);
 						}
 						return true;
 					} else if (arg instanceof WildcardType) {
 						for (var bound : param.getBounds()) {
 							if (bound instanceof ParameterizedType) {
-								process((Class<?>) ((ParameterizedType) bound).getRawType(), bound);
+								process((Class<?>) ((ParameterizedType) bound).getRawType(), bound, element);
 							} else if (bound instanceof TypeVariable) {
-								processGeneric(target, (TypeVariable) bound);
+								processGeneric(target, (TypeVariable) bound, element);
 							} else {
-								process((Class<?>) bound, null);
+								process((Class<?>) bound, null, element);
 							}
 						}
 						return true;
 					} else {
 						var klass = (Class) arg;
-						process(klass, klass);
+						process(klass, klass, element);
 						return true;
 					}
 				}
@@ -106,24 +115,24 @@ public class TypeMeta {
 		return false;
 	}
 
-	private void findType(TypeMeta target, TypeVariable type, Class start) {
+	private void findType(TypeMeta target, TypeVariable type, Class start, AnnotatedElement element) {
 		var startClass = (Class) start;
 		var genericDeclaration = type.getGenericDeclaration();
 		if (start.equals(genericDeclaration)) {
 			//we don't have any implementing logic we are at this level so take the bounds
 			for (var bound : type.getBounds()) {
 				if (bound instanceof ParameterizedType) {
-					process((Class<?>) ((ParameterizedType) bound).getRawType(), bound);
+					process((Class<?>) ((ParameterizedType) bound).getRawType(), bound, element);
 				} else if (bound instanceof TypeVariable) {
-					processGeneric(target, (TypeVariable) bound);
+					processGeneric(target, (TypeVariable) bound, element);
 				} else {
-					process((Class<?>) bound, null);
+					process((Class<?>) bound, null, element);
 				}
 			}
 		}
 		if (startClass.getSuperclass() != null && startClass.getSuperclass().equals(genericDeclaration)) {
 			var generic = (ParameterizedType) startClass.getGenericSuperclass();
-			if (matchType(target, type.getTypeName(), generic, false)) {
+			if (matchType(target, type.getTypeName(), generic, false, element)) {
 				return;
 			}
 		}
@@ -131,26 +140,26 @@ public class TypeMeta {
 			if (inter instanceof ParameterizedType) {
 				var generic = (ParameterizedType) inter;
 				if (generic.getRawType().equals(genericDeclaration)) {
-					if (matchType(target, type.getTypeName(), generic, false)) {
+					if (matchType(target, type.getTypeName(), generic, false, element)) {
 						return;
 					}
 				}
 			}
 		}
 		if (startClass.getSuperclass() != null) {
-			findType(target, type, startClass.getSuperclass());
+			findType(target, type, startClass.getSuperclass(), element);
 		}
 
 		for (var inter : startClass.getInterfaces()) {
-			findType(target, type, inter);
+			findType(target, type, inter, element);
 		}
 	}
 
-	private void process(Class<?> type, Type genericType) {
+	private void process(Class<?> type, Type genericType, AnnotatedElement element) {
 		if (type.isArray()) {
 			flags.add(Flag.ARRAY);
 			types.add(type);
-			process(type.getComponentType(), null);
+			process(type.getComponentType(), null, element);
 			return;
 		}
 
@@ -159,11 +168,11 @@ public class TypeMeta {
 			types.add(type);
 			genericType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
 			if (genericType instanceof ParameterizedType) {
-				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType);
+				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType, element);
 			} else if (genericType instanceof TypeVariable) {
-				processGeneric(parent, (TypeVariable) genericType);
+				processGeneric(parent, (TypeVariable) genericType, element);
 			} else {
-				process((Class<?>) genericType, null);
+				process((Class<?>) genericType, null, element);
 			}
 			return;
 		}
@@ -172,11 +181,11 @@ public class TypeMeta {
 			types.add(type);
 			genericType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
 			if (genericType instanceof ParameterizedType) {
-				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType);
+				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType, element);
 			} else if (genericType instanceof TypeVariable) {
-				processGeneric(parent, (TypeVariable) genericType);
+				processGeneric(parent, (TypeVariable) genericType, element);
 			} else {
-				process((Class<?>) genericType, null);
+				process((Class<?>) genericType, null, element);
 			}
 			return;
 		}
@@ -186,11 +195,11 @@ public class TypeMeta {
 			types.add(type);
 			genericType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
 			if (genericType instanceof ParameterizedType) {
-				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType);
+				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType, element);
 			} else if (genericType instanceof TypeVariable) {
-				processGeneric(parent, (TypeVariable) genericType);
+				processGeneric(parent, (TypeVariable) genericType, element);
 			} else {
-				process((Class<?>) genericType, null);
+				process((Class<?>) genericType, null, element);
 			}
 			return;
 		}
@@ -200,18 +209,26 @@ public class TypeMeta {
 			types.add(type);
 			genericType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
 			if (genericType instanceof ParameterizedType) {
-				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType);
+				process((Class<?>) ((ParameterizedType) genericType).getRawType(), genericType, element);
 			} else if (genericType instanceof TypeVariable) {
-				processGeneric(parent, (TypeVariable) genericType);
+				processGeneric(parent, (TypeVariable) genericType, element);
 			} else {
-				process((Class<?>) genericType, null);
+				process((Class<?>) genericType, null, element);
 			}
 			return;
 		}
+
 		if (genericType != null && genericType instanceof TypeVariable) {
-			processGeneric(parent, (TypeVariable) genericType);
+			processGeneric(parent, (TypeVariable) genericType, element);
 			return;
 		}
+
+		if (element != null && element.isAnnotationPresent(Nullable.class)) {
+			if (!flags.contains(Flag.OPTIONAL)) {
+				flags.add(Flag.OPTIONAL);
+			}
+		}
+
 		this.type = type;
 		this.genericType = genericType;
 		types.add(type);
@@ -312,7 +329,7 @@ public class TypeMeta {
 	}
 
 	public TypeMeta direct() {
-		var toReturn = new TypeMeta(parent, type, genericType);
+		var toReturn = new TypeMeta(parent, type, genericType, element);
 		toReturn.direct = true;
 		return toReturn;
 	}
@@ -322,7 +339,7 @@ public class TypeMeta {
 	}
 
 	public TypeMeta notDirect() {
-		var toReturn = new TypeMeta(parent, type, genericType);
+		var toReturn = new TypeMeta(parent, type, genericType, element);
 		return toReturn;
 	}
 }

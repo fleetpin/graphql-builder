@@ -12,12 +12,26 @@
 package com.fleetpin.graphql.builder.record;
 
 import com.fleetpin.graphql.builder.annotations.Query;
+import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 public class Queries {
 
 	@Query
 	public static InputType passthrough(InputType type) {
+		return type;
+	}
+
+	@Query
+	@Nullable
+	public static Boolean nullableTest(@Nullable Boolean type) {
+		return type;
+	}
+
+	@Query
+	@Nullable
+	public static List<Boolean> nullableArrayTest(@Nullable List<Boolean> type) {
 		return type;
 	}
 

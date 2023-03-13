@@ -85,7 +85,7 @@ class MethodProcessor {
 
 		field.name(coordinates.getFieldName());
 
-		TypeMeta meta = new TypeMeta(parentMeta, method.getReturnType(), method.getGenericReturnType());
+		TypeMeta meta = new TypeMeta(parentMeta, method.getReturnType(), method.getGenericReturnType(), method);
 		var type = entityProcessor.getType(meta, method.getAnnotations());
 		field.type(type);
 		for (int i = 0; i < method.getParameterCount(); i++) {
@@ -94,7 +94,7 @@ class MethodProcessor {
 				continue;
 			}
 
-			TypeMeta inputMeta = new TypeMeta(null, method.getParameterTypes()[i], method.getGenericParameterTypes()[i]);
+			TypeMeta inputMeta = new TypeMeta(null, method.getParameterTypes()[i], method.getGenericParameterTypes()[i], method.getParameters()[i]);
 			argument.type(entityProcessor.getInputType(inputMeta, method.getParameterAnnotations()[i])); //TODO:dirty cast
 			argument.name(method.getParameters()[i].getName());
 			//TODO: argument.defaultValue(defaultValue)
@@ -125,7 +125,7 @@ class MethodProcessor {
 			Class<?> type = method.getParameterTypes()[i];
 			var name = method.getParameters()[i].getName();
 			var generic = method.getGenericParameterTypes()[i];
-			var argMeta = new TypeMeta(meta, type, generic);
+			var argMeta = new TypeMeta(meta, type, generic, method.getParameters()[i]);
 			resolvers[i] = buildResolver(name, argMeta, method.getParameterAnnotations()[i]);
 		}
 
