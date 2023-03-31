@@ -96,6 +96,12 @@ class MethodProcessor {
 
 			TypeMeta inputMeta = new TypeMeta(null, method.getParameterTypes()[i], method.getGenericParameterTypes()[i], method.getParameters()[i]);
 			argument.type(entityProcessor.getInputType(inputMeta, method.getParameterAnnotations()[i])); //TODO:dirty cast
+
+			description = method.getParameters()[i].getAnnotation(GraphQLDescription.class);
+			if (description != null) {
+				field.description(description.value());
+			}
+
 			argument.name(method.getParameters()[i].getName());
 			//TODO: argument.defaultValue(defaultValue)
 			field.argument(argument);

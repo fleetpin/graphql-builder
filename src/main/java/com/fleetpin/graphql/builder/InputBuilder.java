@@ -129,6 +129,12 @@ public abstract class InputBuilder {
 						var entity = entityProcessor.getEntity(innerMeta);
 						var inputType = entity.getInputType(innerMeta, method.getParameterAnnotations()[0]);
 						field.type(inputType);
+
+						var description = method.getAnnotation(GraphQLDescription.class);
+						if (description != null) {
+							field.description(description.value());
+						}
+
 						graphInputType.field(field);
 					}
 				} catch (RuntimeException e) {
@@ -176,6 +182,11 @@ public abstract class InputBuilder {
 					TypeMeta innerMeta = new TypeMeta(meta, parameter.getType(), parameter.getParameterizedType(), parameter);
 					var entity = entityProcessor.getEntity(innerMeta);
 					var inputType = entity.getInputType(innerMeta, parameter.getAnnotations());
+
+					var description = parameter.getAnnotation(GraphQLDescription.class);
+					if (description != null) {
+						field.description(description.value());
+					}
 					field.type(inputType);
 					graphInputType.field(field);
 				} catch (RuntimeException e) {
@@ -226,6 +237,12 @@ public abstract class InputBuilder {
 							TypeMeta innerMeta = new TypeMeta(meta, field.getType(), field.getGenericType(), field);
 							var entity = entityProcessor.getEntity(innerMeta);
 							var inputType = entity.getInputType(innerMeta, field.getAnnotations());
+
+							var description = field.getAnnotation(GraphQLDescription.class);
+							if (description != null) {
+								fieldBuilder.description(description.value());
+							}
+
 							fieldBuilder.type(inputType);
 							graphInputType.field(fieldBuilder);
 						}
