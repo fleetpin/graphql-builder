@@ -223,7 +223,7 @@ public class TypeMeta {
 			return;
 		}
 
-		if (element != null && element.isAnnotationPresent(Nullable.class)) {
+		if (element != null && (element.isAnnotationPresent(Nullable.class) || element.isAnnotationPresent(jakarta.annotation.Nullable.class))) {
 			if (!flags.contains(Flag.OPTIONAL)) {
 				flags.add(Flag.OPTIONAL);
 			}
