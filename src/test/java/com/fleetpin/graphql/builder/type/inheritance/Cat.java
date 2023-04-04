@@ -12,11 +12,13 @@
 package com.fleetpin.graphql.builder.type.inheritance;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
 import com.fleetpin.graphql.builder.annotations.Mutation;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 import java.util.Optional;
 
 @Entity(SchemaOption.BOTH)
+@GraphQLDescription("cat type")
 public class Cat extends Animal {
 
 	private boolean calico;
@@ -52,10 +54,16 @@ public class Cat extends Animal {
 		this.age = age;
 	}
 
+	@GraphQLDescription("get fur")
 	public Optional<Boolean> getFur() {
 		return fur;
 	}
 
+	public Optional<Boolean> getWeight(@GraphQLDescription("whole number") Boolean round) {
+		return fur;
+	}
+
+	@GraphQLDescription("set fur")
 	public void setFur(Optional<Boolean> fur) {
 		this.fur = fur;
 	}
@@ -65,7 +73,8 @@ public class Cat extends Animal {
 	}
 
 	@Mutation
-	public static Cat getCat() {
+	@GraphQLDescription("cat endpoint")
+	public static Cat getCat(@GraphQLDescription("sample") Optional<Boolean> age) {
 		return null;
 	}
 }

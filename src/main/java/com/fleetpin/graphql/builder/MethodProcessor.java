@@ -99,7 +99,7 @@ class MethodProcessor {
 
 			description = method.getParameters()[i].getAnnotation(GraphQLDescription.class);
 			if (description != null) {
-				field.description(description.value());
+				argument.description(description.value());
 			}
 
 			argument.name(method.getParameters()[i].getName());

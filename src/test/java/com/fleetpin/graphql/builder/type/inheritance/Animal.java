@@ -12,6 +12,7 @@
 package com.fleetpin.graphql.builder.type.inheritance;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
 import com.fleetpin.graphql.builder.annotations.Mutation;
 import com.fleetpin.graphql.builder.annotations.OneOf;
 import com.fleetpin.graphql.builder.annotations.Query;
@@ -20,11 +21,13 @@ import java.util.Arrays;
 import java.util.List;
 
 @Entity(SchemaOption.BOTH)
-@OneOf(value = { @OneOf.Type(name = "cat", type = Cat.class), @OneOf.Type(name = "dog", type = Dog.class) })
+@GraphQLDescription("animal desc")
+@OneOf(value = { @OneOf.Type(name = "cat", type = Cat.class), @OneOf.Type(name = "dog", type = Dog.class, description = "A dog") })
 public abstract class Animal {
 
 	private String name = "name";
 
+	@GraphQLDescription("the name")
 	public String getName() {
 		return name;
 	}

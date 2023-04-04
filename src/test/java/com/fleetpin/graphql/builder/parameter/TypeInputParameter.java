@@ -12,6 +12,7 @@
 package com.fleetpin.graphql.builder.parameter;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
 import com.fleetpin.graphql.builder.annotations.Query;
 import com.fleetpin.graphql.builder.annotations.SchemaOption;
 import java.util.List;
@@ -20,7 +21,9 @@ import java.util.Optional;
 public class TypeInputParameter {
 
 	@Entity
+	@GraphQLDescription("enum desc")
 	public enum AnimalType {
+		@GraphQLDescription("A cat")
 		CAT,
 		DOG,
 	}

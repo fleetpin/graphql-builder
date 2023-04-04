@@ -53,6 +53,35 @@ public class ParameterTypeParsingTest {
 	}
 
 	@Test
+	public void testDescription() throws ReflectiveOperationException, JsonMappingException, JsonProcessingException {
+		Map<String, Map<String, Object>> response = execute(
+			"{" +
+			"  __type(name: \"AnimalType\") {" +
+			"    name" +
+			"    kind" +
+			"    description" +
+			"    enumValues {" +
+			"      name" +
+			"      description" +
+			"    }" +
+			"  }" +
+			"} ",
+			null
+		)
+			.getData();
+
+		var type = response.get("__type");
+
+		assertEquals("enum desc", type.get("description"));
+
+		Map<String, String> dog = new HashMap<>();
+		dog.put("name", "DOG");
+		dog.put("description", null);
+
+		assertEquals(List.of(Map.of("name", "CAT", "description", "A cat"), dog), type.get("enumValues"));
+	}
+
+	@Test
 	public void testOptionalTypePresent() throws ReflectiveOperationException, JsonMappingException, JsonProcessingException {
 		Map<String, Map<String, String>> response = execute("query test($type: InputTestInput){optionalType(type: $type){value}} ", "{\"value\": \"There\"}")
 			.getData();

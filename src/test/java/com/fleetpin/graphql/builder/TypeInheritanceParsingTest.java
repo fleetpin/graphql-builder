@@ -94,6 +94,71 @@ public class TypeInheritanceParsingTest {
 		confirmNumber(nonNull);
 	}
 
+	@Test
+	public void testCatDescription() throws ReflectiveOperationException {
+		var type = getField("Cat", "OBJECT", null);
+		Assertions.assertEquals("cat type", type.get("description"));
+	}
+
+	@Test
+	public void testCatFurDescription() throws ReflectiveOperationException {
+		var type = getField("Cat", "OBJECT", null);
+
+		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
+		var field = fields.stream().filter(map -> map.get("name").equals("fur")).findAny().get();
+		Assertions.assertEquals("get fur", field.get("description"));
+	}
+
+	@Test
+	public void testCatWeightArgumentDescription() throws ReflectiveOperationException {
+		var type = getField("Cat", "OBJECT", null);
+
+		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
+		var field = fields.stream().filter(map -> map.get("name").equals("weight")).findAny().get();
+		Assertions.assertEquals(null, field.get("description"));
+
+		List<Map<String, Object>> args = (List<Map<String, Object>>) field.get("args");
+		var round = args.stream().filter(map -> map.get("name").equals("round")).findAny().get();
+		Assertions.assertEquals("whole number", round.get("description"));
+	}
+
+	@Test
+	public void testMutationDescription() throws ReflectiveOperationException {
+		var type = getField("Mutations", "OBJECT", null);
+
+		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
+		var field = fields.stream().filter(map -> map.get("name").equals("getCat")).findAny().get();
+		Assertions.assertEquals("cat endpoint", field.get("description"));
+
+		List<Map<String, Object>> args = (List<Map<String, Object>>) field.get("args");
+		var round = args.stream().filter(map -> map.get("name").equals("age")).findAny().get();
+		Assertions.assertEquals("sample", round.get("description"));
+	}
+
+	@Test
+	public void testCatFurInputDescription() throws ReflectiveOperationException {
+		var type = getField("CatInput", "INPUT_OBJECT", null);
+
+		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("inputFields");
+		var field = fields.stream().filter(map -> map.get("name").equals("fur")).findAny().get();
+		Assertions.assertEquals("set fur", field.get("description"));
+	}
+
+	@Test
+	public void testInputCatDescription() throws ReflectiveOperationException {
+		var type = getField("CatInput", "INPUT_OBJECT", null);
+		Assertions.assertEquals("cat type", type.get("description"));
+	}
+
+	@Test
+	public void testInputOneOfDescription() throws ReflectiveOperationException {
+		var type = getField("AnimalInput", "INPUT_OBJECT", null);
+		Assertions.assertEquals("animal desc", type.get("description"));
+		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("inputFields");
+		var field = fields.stream().filter(map -> map.get("name").equals("dog")).findAny().get();
+		Assertions.assertEquals("A dog", field.get("description"));
+	}
+
 	private void confirmString(Map<String, Object> type) {
 		Assertions.assertEquals("SCALAR", type.get("kind"));
 		Assertions.assertEquals("String", type.get("name"));
@@ -136,8 +201,14 @@ public class TypeInheritanceParsingTest {
 			"\") {" +
 			"    name" +
 			"    kind" +
+			"    description" +
 			"    fields {" +
 			"      name" +
+			"      description" +
+			"      args {" +
+			"        name" +
+			"        description" +
+			"      }" +
 			"      type {" +
 			"        name" +
 			"        kind" +
@@ -157,6 +228,7 @@ public class TypeInheritanceParsingTest {
 			"    }" +
 			"    inputFields {" +
 			"      name" +
+			"      description" +
 			"      type {" +
 			"        name" +
 			"        kind" +
@@ -181,6 +253,10 @@ public class TypeInheritanceParsingTest {
 		var type = response.get("__type");
 		Assertions.assertEquals(typeName, type.get("name"));
 		Assertions.assertEquals(kind, type.get("kind"));
+
+		if (name == null) {
+			return type;
+		}
 
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
 		if (fields == null) {

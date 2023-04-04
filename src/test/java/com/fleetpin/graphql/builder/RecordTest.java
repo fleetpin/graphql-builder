@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
@@ -40,6 +42,39 @@ public class RecordTest {
 		var expected = new HashMap<>(type);
 		expected.put("weight", null);
 		assertEquals(expected, passthrough);
+	}
+
+	@Test
+	public void testDescription() throws ReflectiveOperationException, JsonMappingException, JsonProcessingException {
+		Map<String, Map<String, Object>> response = execute(
+			"{" +
+			"  __type(name: \"InputTypeInput\") {" +
+			"    name" +
+			"    kind" +
+			"    description" +
+			"    inputFields {" +
+			"      name" +
+			"      description" +
+			"    }" +
+			"  }" +
+			"} ",
+			null
+		)
+			.getData();
+
+		var type = response.get("__type");
+		System.out.println(type);
+		assertEquals("record Type", type.get("description"));
+
+		Map<String, String> age = new HashMap<>();
+		age.put("name", "age");
+		age.put("description", null);
+
+		Map<String, String> weight = new HashMap<>();
+		weight.put("name", "weight");
+		weight.put("description", null);
+
+		assertEquals(List.of(Map.of("name", "name", "description", "the name"), age, weight), type.get("inputFields"));
 	}
 
 	@Test

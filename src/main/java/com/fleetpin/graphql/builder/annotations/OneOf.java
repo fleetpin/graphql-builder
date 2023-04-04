@@ -28,5 +28,7 @@ public @interface OneOf {
 		String name();
 
 		Class<?> type();
+
+		String description() default "";
 	}
 }

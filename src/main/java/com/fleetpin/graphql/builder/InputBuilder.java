@@ -95,6 +95,9 @@ public abstract class InputBuilder {
 				var name = oneOfType.name();
 				GraphQLInputObjectField.Builder field = GraphQLInputObjectField.newInputObjectField();
 				field.name(name);
+				if (!oneOfType.description().isEmpty()) {
+					field.description(oneOfType.description());
+				}
 				TypeMeta innerMeta = new TypeMeta(meta, oneOfType.type(), oneOfType.type());
 				innerMeta.optional();
 				var type = entityProcessor.getEntity(innerMeta).getInputType(innerMeta, new Annotation[0]);

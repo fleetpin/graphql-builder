@@ -11,6 +11,8 @@
  */
 package com.fleetpin.graphql.builder;
 
+import static graphql.schema.GraphQLEnumValueDefinition.newEnumValueDefinition;
+
 import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
 import com.fleetpin.graphql.builder.annotations.GraphQLIgnore;
 import com.fleetpin.graphql.builder.mapper.InputTypeBuilder;
@@ -37,10 +39,17 @@ public class EnumEntity extends EntityHolder {
 		Object[] enums = type.getEnumConstants();
 		for (Object e : enums) {
 			Enum a = (Enum) e;
-			if (type.getDeclaredField(e.toString()).isAnnotationPresent(GraphQLIgnore.class)) {
+			var field = type.getDeclaredField(e.toString());
+			if (field.isAnnotationPresent(GraphQLIgnore.class)) {
 				continue;
 			}
-			enumType.value(a.name(), a);
+			var valueDef = newEnumValueDefinition().name(a.name()).value(a);
+			var desc = field.getAnnotation(GraphQLDescription.class);
+			if (desc != null) {
+				valueDef.description(desc.value());
+			}
+
+			enumType.value(valueDef.build());
 		}
 		directives.addSchemaDirective(type, type, enumType::withAppliedDirective);
 		this.enumType = enumType.build();
