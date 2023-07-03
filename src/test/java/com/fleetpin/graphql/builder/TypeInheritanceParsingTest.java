@@ -11,22 +11,24 @@
  */
 package com.fleetpin.graphql.builder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import com.fleetpin.graphql.builder.exceptions.InvalidOneOfException;
+import graphql.ExceptionWhileDataFetching;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import java.util.List;
 import java.util.Map;
+
+import graphql.validation.ValidationError;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TypeInheritanceParsingTest {
 
 	@Test
-	public void findTypes() throws ReflectiveOperationException {
+	public void findTypes() {
 		Map<String, Map<String, List<Map<String, String>>>> response = execute("{__schema {types {name}}} ").getData();
 		var types = response.get("__schema").get("types");
 		var count = types.stream().filter(map -> map.get("name").equals("SimpleType")).count();
@@ -34,74 +36,74 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testAnimalName() throws ReflectiveOperationException {
+	public void testAnimalName() {
 		var name = getField("Animal", "INTERFACE", "name");
 		var nonNull = confirmNonNull(name);
 		confirmString(nonNull);
 	}
 
 	@Test
-	public void testAnimalInputName() throws ReflectiveOperationException {
+	public void testAnimalInputName() {
 		var name = getField("AnimalInput", "INPUT_OBJECT", "cat");
 		confirmInputObject(name, "CatInput");
 	}
 
 	@Test
-	public void testCatName() throws ReflectiveOperationException {
+	public void testCatName() {
 		var name = getField("Cat", "OBJECT", "name");
 		var nonNull = confirmNonNull(name);
 		confirmString(nonNull);
 	}
 
 	@Test
-	public void testCatAge() throws ReflectiveOperationException {
+	public void testCatAge() {
 		var name = getField("Cat", "OBJECT", "age");
 		var nonNull = confirmNonNull(name);
 		confirmNumber(nonNull);
 	}
 
 	@Test
-	public void testCatFur() throws ReflectiveOperationException {
+	public void testCatFur() {
 		var name = getField("Cat", "OBJECT", "fur");
 		confirmBoolean(name);
 	}
 
 	@Test
-	public void testCatCalico() throws ReflectiveOperationException {
+	public void testCatCalico() {
 		var name = getField("Cat", "OBJECT", "calico");
 		var nonNull = confirmNonNull(name);
 		confirmBoolean(nonNull);
 	}
 
 	@Test
-	public void testDogName() throws ReflectiveOperationException {
+	public void testDogName() {
 		var name = getField("Dog", "OBJECT", "name");
 		var nonNull = confirmNonNull(name);
 		confirmString(nonNull);
 	}
 
 	@Test
-	public void testDogFur() throws ReflectiveOperationException {
+	public void testDogFur() {
 		var name = getField("Dog", "OBJECT", "fur");
 		var nonNull = confirmNonNull(name);
 		confirmString(nonNull);
 	}
 
 	@Test
-	public void testDogAge() throws ReflectiveOperationException {
+	public void testDogAge() {
 		var name = getField("Dog", "OBJECT", "age");
 		var nonNull = confirmNonNull(name);
 		confirmNumber(nonNull);
 	}
 
 	@Test
-	public void testCatDescription() throws ReflectiveOperationException {
+	public void testCatDescription() {
 		var type = getField("Cat", "OBJECT", null);
 		Assertions.assertEquals("cat type", type.get("description"));
 	}
 
 	@Test
-	public void testCatFurDescription() throws ReflectiveOperationException {
+	public void testCatFurDescription() {
 		var type = getField("Cat", "OBJECT", null);
 
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
@@ -110,7 +112,7 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testCatWeightArgumentDescription() throws ReflectiveOperationException {
+	public void testCatWeightArgumentDescription() {
 		var type = getField("Cat", "OBJECT", null);
 
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
@@ -123,7 +125,7 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testMutationDescription() throws ReflectiveOperationException {
+	public void testMutationDescription() {
 		var type = getField("Mutations", "OBJECT", null);
 
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("fields");
@@ -136,7 +138,7 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testCatFurInputDescription() throws ReflectiveOperationException {
+	public void testCatFurInputDescription() {
 		var type = getField("CatInput", "INPUT_OBJECT", null);
 
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("inputFields");
@@ -145,13 +147,13 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testInputCatDescription() throws ReflectiveOperationException {
+	public void testInputCatDescription() {
 		var type = getField("CatInput", "INPUT_OBJECT", null);
 		Assertions.assertEquals("cat type", type.get("description"));
 	}
 
 	@Test
-	public void testInputOneOfDescription() throws ReflectiveOperationException {
+	public void testInputOneOfDescription() {
 		var type = getField("AnimalInput", "INPUT_OBJECT", null);
 		Assertions.assertEquals("animal desc", type.get("description"));
 		List<Map<String, Object>> fields = (List<Map<String, Object>>) type.get("inputFields");
@@ -193,7 +195,7 @@ public class TypeInheritanceParsingTest {
 		return toReturn;
 	}
 
-	public Map<String, Object> getField(String typeName, String kind, String name) throws ReflectiveOperationException {
+	public Map<String, Object> getField(String typeName, String kind, String name) {
 		Map<String, Map<String, Object>> response = execute(
 			"{" +
 			"  __type(name: \"" +
@@ -268,7 +270,7 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testQueryCatFur() throws ReflectiveOperationException {
+	public void testQueryCatFur() {
 		Map<String, List<Map<String, Object>>> response = execute(
 			"query {animals{" + "name " + "... on Cat { " + "  age " + "  fur " + "  calico " + "} " + "... on Dog {" + " age " + "} " + "}} "
 		)
@@ -289,7 +291,7 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testQueryDogFur() throws ReflectiveOperationException {
+	public void testQueryDogFur() {
 		Map<String, List<Map<String, Object>>> response = execute(
 			"query {animals{" + "name " + "... on Cat { " + "  age " + "  calico " + "} " + "... on Dog {" + " age " + " fur " + "} " + "}} "
 		)
@@ -310,19 +312,17 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testBothFurFails() throws ReflectiveOperationException {
-		Assertions.assertThrows(
-			RuntimeException.class,
-			() -> {
-				execute(
-					"query {animals{" + "name " + "... on Cat { " + "  age " + "  fur " + "  calico " + "} " + "... on Dog {" + " age " + " fur " + "} " + "}} "
-				);
-			}
+	public void testBothFurFails() {
+		var result = execute(
+				"query {animals{" + "name " + "... on Cat { " + "  age " + "  fur " + "  calico " + "} " + "... on Dog {" + " age " + " fur " + "} " + "}} "
 		);
+
+		assertFalse(result.getErrors().isEmpty());
+		assertTrue(result.getErrors().get(0) instanceof ValidationError);
 	}
 
 	@Test
-	public void testOneOf() throws ReflectiveOperationException {
+	public void testOneOf() {
 		Map<String, List<Map<String, Object>>> response = execute(
 			"mutation {myAnimals(animals: [" +
 			"{cat: {fur: true, calico: false, name: \"socks\", age: 4}}," +
@@ -356,7 +356,7 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testOptionalFieldNotSet() throws ReflectiveOperationException {
+	public void testOptionalFieldNotSet() {
 		Map<String, List<Map<String, Object>>> response = execute(
 			"mutation {myAnimals(animals: [" +
 			"{cat: {calico: false, name: \"socks\", age: 4}}," +
@@ -385,7 +385,7 @@ public class TypeInheritanceParsingTest {
 	}
 
 	@Test
-	public void testOptionalFieldNull() throws ReflectiveOperationException {
+	public void testOptionalFieldNull() {
 		Map<String, List<Map<String, Object>>> response = execute(
 			"mutation {myAnimals(animals: [" +
 			"{cat: {fur: null, calico: false, name: \"socks\", age: 4}}," +
@@ -410,84 +410,76 @@ public class TypeInheritanceParsingTest {
 		assertEquals("socks", cat.get("name"));
 		assertEquals(4, cat.get("age"));
 		assertEquals(false, cat.get("calico"));
-		assertEquals(null, cat.get("fur"));
+		assertNull(cat.get("fur"));
 	}
 
 	@Test
-	public void testOneOfError() throws ReflectiveOperationException {
-		var exception = assertThrows(
-			RuntimeException.class,
-			() ->
-				execute(
-					"mutation {myAnimals(animals: [" +
-					"{cat: {fur: true, calico: false, name: \"socks\", age: 4}," +
-					"dog: {fur: \"short\", name: \"patches\", age: 5}}" +
-					"]){" +
-					"name " +
-					"... on Cat { " +
-					"  age " +
-					"  calico " +
-					"} " +
-					"... on Dog {" +
-					" age " +
-					" fur " +
-					"} " +
-					"}} "
-				)
-					.getData()
+	public void testOneOfError() {
+		var result = execute(
+				"mutation {myAnimals(animals: [" +
+						"{cat: {fur: true, calico: false, name: \"socks\", age: 4}," +
+						"dog: {fur: \"short\", name: \"patches\", age: 5}}" +
+						"]){" +
+						"name " +
+						"... on Cat { " +
+						"  age " +
+						"  calico " +
+						"} " +
+						"... on Dog {" +
+						" age " +
+						" fur " +
+						"} " +
+						"}} "
 		);
 
-		assertTrue(exception.getMessage().contains("OneOf must only have a single field set"));
+		assertFalse(result.getErrors().isEmpty());
+		var exception = ((ExceptionWhileDataFetching)result.getErrors().get(0)).getException();
+		assertTrue(exception.getMessage().contains("OneOf must only have a single field set. Fields: cat, dog"));
 	}
 
 	@Test
-	public void testOneOfErrorEmpty() throws ReflectiveOperationException {
-		var exception = assertThrows(
-			RuntimeException.class,
-			() ->
-				execute(
-					"mutation {myAnimals(animals: [" +
-					"{}" +
-					"]){" +
-					"name " +
-					"... on Cat { " +
-					"  age " +
-					"  calico " +
-					"} " +
-					"... on Dog {" +
-					" age " +
-					" fur " +
-					"} " +
-					"}} "
-				)
-					.getData()
+	public void testOneOfErrorEmpty() {
+		var result = execute(
+				"mutation {myAnimals(animals: [" +
+						"{}" +
+						"]){" +
+						"name " +
+						"... on Cat { " +
+						"  age " +
+						"  calico " +
+						"} " +
+						"... on Dog {" +
+						" age " +
+						" fur " +
+						"} " +
+						"}} "
 		);
 
-		assertTrue(exception.getMessage().contains("OneOf must only have a single field set"));
+		assertFalse(result.getErrors().isEmpty());
+		var exception = ((ExceptionWhileDataFetching)result.getErrors().get(0)).getException();
+		assertTrue(exception.getMessage().contains("OneOf must have a field set"));
 	}
 
 	@Test
-	public void testOneOfErrorField() throws ReflectiveOperationException {
-		var exception = assertThrows(
-			RuntimeException.class,
-			() ->
-				execute(
-					"mutation {myAnimals(animals: [" +
-					"{cat: {fur: null, calico: false, name: \"socks\", age: 4, error: \"fail\"}}" +
-					"]){" +
-					"name " +
-					"... on Cat { " +
-					"  age " +
-					"  calico " +
-					"} " +
-					"... on Dog {" +
-					" age " +
-					" fur " +
-					"} " +
-					"}} "
-				)
-					.getData()
+	public void testOneOfErrorField() {
+		var result = execute(
+				"mutation {myAnimals(animals: [" +
+						"{cat: {fur: null, calico: false, name: \"socks\", age: 4, error: \"fail\"}}" +
+						"]){" +
+						"name " +
+						"... on Cat { " +
+						"  age " +
+						"  calico " +
+						"} " +
+						"... on Dog {" +
+						" age " +
+						" fur " +
+						"} " +
+						"}} "
 		);
+
+		assertFalse(result.getErrors().isEmpty());
+		var exception = ((ExceptionWhileDataFetching)result.getErrors().get(0)).getException();
 		assertTrue(exception.getMessage().contains("ERROR"));
 	}
 
@@ -502,10 +494,6 @@ public class TypeInheritanceParsingTest {
 		if (variables != null) {
 			input.variables(variables);
 		}
-		ExecutionResult result = schema.execute(input);
-		if (!result.getErrors().isEmpty()) {
-			throw new RuntimeException(result.getErrors().toString()); //TODO:cleanup
-		}
-		return result;
+		return schema.execute(input);
 	}
 }
