@@ -13,6 +13,7 @@ package com.fleetpin.graphql.builder.mapper;
 
 import com.fleetpin.graphql.builder.EntityProcessor;
 import com.fleetpin.graphql.builder.annotations.OneOf;
+import com.fleetpin.graphql.builder.exceptions.InvalidOneOfException;
 import graphql.GraphQLContext;
 import java.util.HashMap;
 import java.util.Locale;
@@ -27,7 +28,7 @@ public class OneOfBuilder implements InputTypeBuilder {
 
 		for (var typeOf : oneOf.value()) {
 			if (!type.isAssignableFrom(typeOf.type())) {
-				throw new RuntimeException("OneOf on " + type + " can not support type " + typeOf);
+				throw new InvalidOneOfException("OneOf on " + type + " can not support type " + typeOf);
 			}
 
 			builders.put(typeOf.name(), entityProcessor.getResolver(typeOf.type()));
@@ -38,7 +39,8 @@ public class OneOfBuilder implements InputTypeBuilder {
 				Map<String, Object> map = (Map) obj;
 
 				if (map.size() > 1) {
-					throw new RuntimeException("OneOf must only have a single field set");
+					var fields = String.join(", ", map.keySet());
+					throw new InvalidOneOfException("OneOf must only have a single field set. Fields: " + fields);
 				}
 
 				for (var entry : map.entrySet()) {
@@ -46,7 +48,7 @@ public class OneOfBuilder implements InputTypeBuilder {
 					return builder.convert(entry.getValue(), context, locale);
 				}
 
-				throw new RuntimeException("OneOf must only have a single field set");
+				throw new InvalidOneOfException("OneOf must have a field set");
 			};
 	}
 
