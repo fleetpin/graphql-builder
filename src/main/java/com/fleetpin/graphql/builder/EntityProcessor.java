@@ -38,8 +38,8 @@ public class EntityProcessor {
 	private final Map<String, EntityHolder> entities;
 	private final MethodProcessor methodProcessor;
 
-	EntityProcessor(List<GraphQLScalarType> scalars, DirectivesSchema diretives) {
-		this.methodProcessor = new MethodProcessor(this, diretives);
+	EntityProcessor(DataFetcherRunner dataFetcherRunner, List<GraphQLScalarType> scalars, DirectivesSchema diretives) {
+		this.methodProcessor = new MethodProcessor(dataFetcherRunner, this, diretives);
 		this.entities = new HashMap<>();
 		addDefaults();
 		addScalars(scalars);

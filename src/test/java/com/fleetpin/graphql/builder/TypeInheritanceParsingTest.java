@@ -11,19 +11,18 @@
  */
 package com.fleetpin.graphql.builder;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fleetpin.graphql.builder.exceptions.InvalidOneOfException;
 import graphql.ExceptionWhileDataFetching;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.validation.ValidationError;
 import java.util.List;
 import java.util.Map;
-
-import graphql.validation.ValidationError;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class TypeInheritanceParsingTest {
 
@@ -314,7 +313,7 @@ public class TypeInheritanceParsingTest {
 	@Test
 	public void testBothFurFails() {
 		var result = execute(
-				"query {animals{" + "name " + "... on Cat { " + "  age " + "  fur " + "  calico " + "} " + "... on Dog {" + " age " + " fur " + "} " + "}} "
+			"query {animals{" + "name " + "... on Cat { " + "  age " + "  fur " + "  calico " + "} " + "... on Dog {" + " age " + " fur " + "} " + "}} "
 		);
 
 		assertFalse(result.getErrors().isEmpty());
@@ -416,70 +415,70 @@ public class TypeInheritanceParsingTest {
 	@Test
 	public void testOneOfError() {
 		var result = execute(
-				"mutation {myAnimals(animals: [" +
-						"{cat: {fur: true, calico: false, name: \"socks\", age: 4}," +
-						"dog: {fur: \"short\", name: \"patches\", age: 5}}" +
-						"]){" +
-						"name " +
-						"... on Cat { " +
-						"  age " +
-						"  calico " +
-						"} " +
-						"... on Dog {" +
-						" age " +
-						" fur " +
-						"} " +
-						"}} "
+			"mutation {myAnimals(animals: [" +
+			"{cat: {fur: true, calico: false, name: \"socks\", age: 4}," +
+			"dog: {fur: \"short\", name: \"patches\", age: 5}}" +
+			"]){" +
+			"name " +
+			"... on Cat { " +
+			"  age " +
+			"  calico " +
+			"} " +
+			"... on Dog {" +
+			" age " +
+			" fur " +
+			"} " +
+			"}} "
 		);
 
 		assertFalse(result.getErrors().isEmpty());
-		var exception = ((ExceptionWhileDataFetching)result.getErrors().get(0)).getException();
+		var exception = ((ExceptionWhileDataFetching) result.getErrors().get(0)).getException();
 		assertTrue(exception.getMessage().contains("OneOf must only have a single field set. Fields: cat, dog"));
 	}
 
 	@Test
 	public void testOneOfErrorEmpty() {
 		var result = execute(
-				"mutation {myAnimals(animals: [" +
-						"{}" +
-						"]){" +
-						"name " +
-						"... on Cat { " +
-						"  age " +
-						"  calico " +
-						"} " +
-						"... on Dog {" +
-						" age " +
-						" fur " +
-						"} " +
-						"}} "
+			"mutation {myAnimals(animals: [" +
+			"{}" +
+			"]){" +
+			"name " +
+			"... on Cat { " +
+			"  age " +
+			"  calico " +
+			"} " +
+			"... on Dog {" +
+			" age " +
+			" fur " +
+			"} " +
+			"}} "
 		);
 
 		assertFalse(result.getErrors().isEmpty());
-		var exception = ((ExceptionWhileDataFetching)result.getErrors().get(0)).getException();
+		var exception = ((ExceptionWhileDataFetching) result.getErrors().get(0)).getException();
 		assertTrue(exception.getMessage().contains("OneOf must have a field set"));
 	}
 
 	@Test
 	public void testOneOfErrorField() {
 		var result = execute(
-				"mutation {myAnimals(animals: [" +
-						"{cat: {fur: null, calico: false, name: \"socks\", age: 4, error: \"fail\"}}" +
-						"]){" +
-						"name " +
-						"... on Cat { " +
-						"  age " +
-						"  calico " +
-						"} " +
-						"... on Dog {" +
-						" age " +
-						" fur " +
-						"} " +
-						"}} "
+			"mutation {myAnimals(animals: [" +
+			"{cat: {fur: null, calico: false, name: \"socks\", age: 4, error: \"fail\"}}" +
+			"]){" +
+			"name " +
+			"... on Cat { " +
+			"  age " +
+			"  calico " +
+			"} " +
+			"... on Dog {" +
+			" age " +
+			" fur " +
+			"} " +
+			"}} "
 		);
 
 		assertFalse(result.getErrors().isEmpty());
-		var exception = ((ExceptionWhileDataFetching)result.getErrors().get(0)).getException();
+		var exception = ((ExceptionWhileDataFetching) result.getErrors().get(0)).getException();
 		assertTrue(exception.getMessage().contains("ERROR"));
 	}
 

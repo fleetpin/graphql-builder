@@ -11,38 +11,48 @@
  */
 package com.fleetpin.graphql.builder;
 
+import static com.fleetpin.graphql.builder.EntityUtil.isContext;
+
+import graphql.GraphQLContext;
 import graphql.GraphqlErrorException;
 import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public class AuthorizerSchema {
 
+	private final DataFetcherRunner dataFetcherRunner;
 	private final Set<String> basePackages;
 	private final Map<String, Authorizer> targets;
 
-	private AuthorizerSchema(Set<String> basePackages, Map<String, Authorizer> targets) {
+	private AuthorizerSchema(DataFetcherRunner dataFetcherRunner, Set<String> basePackages, Map<String, Authorizer> targets) {
+		this.dataFetcherRunner = dataFetcherRunner;
 		this.basePackages = basePackages;
 		this.targets = targets;
 	}
 
-	public static AuthorizerSchema build(Set<String> basePackage, Set<Class<? extends Authorizer>> authorizers) throws ReflectiveOperationException {
+	public static AuthorizerSchema build(DataFetcherRunner dataFetcherRunner, Set<String> basePackage, Set<Class<? extends Authorizer>> authorizers)
+		throws ReflectiveOperationException {
 		Map<String, Authorizer> targets = new HashMap<>();
 
 		for (var type : authorizers) {
 			Authorizer auth = type.getDeclaredConstructor().newInstance();
 			targets.put(type.getPackageName(), auth);
 		}
-		return new AuthorizerSchema(basePackage, targets);
+		return new AuthorizerSchema(dataFetcherRunner, basePackage, targets);
 	}
 
 	public Authorizer getAuthorizer(Class type) {
@@ -139,21 +149,35 @@ public class AuthorizerSchema {
 			throw new RuntimeException("No authorizer found for " + method);
 		}
 
-		return env -> {
-			for (Method authorizer : toRun) {
-				Object[] args = new Object[authorizer.getParameterCount()];
+		List<DataFetcher<?>> authRunners = toRun
+			.stream()
+			.<DataFetcher<?>>map(authorizer -> {
+				var count = authorizer.getParameterCount();
 
-				for (int i = 0; i < args.length; i++) {
-					if (authorizer.getParameterTypes()[i].isAssignableFrom(env.getClass())) {
-						args[i] = env;
-					} else if (authorizer.getParameterTypes()[i].isAssignableFrom(env.getContext().getClass())) {
-						args[i] = env.getContext();
-					} else {
-						args[i] = env.getArgument(authorizer.getParameters()[i].getName());
+				List<Function<DataFetchingEnvironment, Object>> mappers = Arrays
+					.asList(authorizer.getParameters())
+					.stream()
+					.map(parameter -> buildResolver(parameter.getName(), parameter.getType(), parameter.getAnnotations()))
+					.toList();
+
+				DataFetcher<Object> authFetcher = env -> {
+					Object[] args = new Object[count];
+
+					for (int i = 0; i < args.length; i++) {
+						args[i] = mappers.get(i).apply(env);
 					}
-				}
+
+					return authorizer.invoke(wrapper, args);
+				};
+				return dataFetcherRunner.manage(authorizer, authFetcher);
+			})
+			.toList();
+
+		return env -> {
+			for (var authorizer : authRunners) {
 				try {
-					Object allow = authorizer.invoke(wrapper, args);
+					Object allow = authorizer.get(env);
+
 					if (allow instanceof Boolean) {
 						if ((Boolean) allow) {
 							return fetcher.get(env);
@@ -209,5 +233,34 @@ public class AuthorizerSchema {
 			}
 			return fetcher.get(env);
 		};
+	}
+
+	private Function<DataFetchingEnvironment, Object> buildResolver(String name, Class<?> type, Annotation[] annotations) {
+		if (isContext(type, annotations)) {
+			if (type.isAssignableFrom(DataFetchingEnvironment.class)) {
+				return env -> env;
+			}
+			if (type.isAssignableFrom(GraphQLContext.class)) {
+				return env -> env.getGraphQlContext();
+			}
+			return env -> {
+				var localContext = env.getLocalContext();
+				if (localContext != null && type.isAssignableFrom(localContext.getClass())) {
+					return localContext;
+				}
+
+				var context = env.getContext();
+				if (context != null && type.isAssignableFrom(context.getClass())) {
+					return context;
+				}
+
+				context = env.getGraphQlContext().get(name);
+				if (context != null && type.isAssignableFrom(context.getClass())) {
+					return context;
+				}
+				throw new RuntimeException("Context object " + name + " not found");
+			};
+		}
+		return env -> env.getArgument(name);
 	}
 }

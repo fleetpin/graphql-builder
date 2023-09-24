@@ -24,6 +24,7 @@ import java.util.function.Function;
 
 class MethodProcessor {
 
+	private final DataFetcherRunner dataFetcherRunner;
 	private final EntityProcessor entityProcessor;
 	private final DirectivesSchema diretives;
 
@@ -33,7 +34,8 @@ class MethodProcessor {
 	private final GraphQLObjectType.Builder graphMutations;
 	private final GraphQLObjectType.Builder graphSubscriptions;
 
-	public MethodProcessor(EntityProcessor entityProcessor, DirectivesSchema diretives) {
+	public MethodProcessor(DataFetcherRunner dataFetcherRunner, EntityProcessor entityProcessor, DirectivesSchema diretives) {
+		this.dataFetcherRunner = dataFetcherRunner;
 		this.entityProcessor = entityProcessor;
 		this.diretives = diretives;
 		this.codeRegistry = GraphQLCodeRegistry.newCodeRegistry();
@@ -153,7 +155,7 @@ class MethodProcessor {
 			}
 		};
 
-		return fetcher;
+		return dataFetcherRunner.manage(method, fetcher);
 	}
 
 	private Function<DataFetchingEnvironment, Object> buildResolver(String name, TypeMeta argMeta, Annotation[] annotations) {

@@ -36,11 +36,11 @@ public class SchemaBuilder {
 
 	private final EntityProcessor entityProcessor;
 
-	private SchemaBuilder(List<GraphQLScalarType> scalars, DirectivesSchema diretives, AuthorizerSchema authorizer) {
+	private SchemaBuilder(DataFetcherRunner dataFetcherRunner, List<GraphQLScalarType> scalars, DirectivesSchema diretives, AuthorizerSchema authorizer) {
 		this.diretives = diretives;
 		this.authorizer = authorizer;
 
-		this.entityProcessor = new EntityProcessor(scalars, diretives);
+		this.entityProcessor = new EntityProcessor(dataFetcherRunner, scalars, diretives);
 
 		diretives.processSDL(entityProcessor);
 	}
@@ -109,10 +109,16 @@ public class SchemaBuilder {
 
 	public static class Builder {
 
+		private DataFetcherRunner dataFetcherRunner = (method, fetcher) -> fetcher;
 		private List<String> classpaths = new ArrayList<>();
 		private List<GraphQLScalarType> scalars = new ArrayList<>();
 
 		private Builder() {}
+
+		public Builder dataFetcherRunner(DataFetcherRunner dataFetcherRunner) {
+			this.dataFetcherRunner = dataFetcherRunner;
+			return this;
+		}
 
 		public Builder classpath(String classpath) {
 			this.classpaths.add(classpath);
@@ -129,7 +135,7 @@ public class SchemaBuilder {
 				Reflections reflections = new Reflections(classpaths, Scanners.SubTypes, Scanners.MethodsAnnotated, Scanners.TypesAnnotated);
 				Set<Class<? extends Authorizer>> authorizers = reflections.getSubTypesOf(Authorizer.class);
 				//want to make everything split by package
-				AuthorizerSchema authorizer = AuthorizerSchema.build(new HashSet<>(classpaths), authorizers);
+				AuthorizerSchema authorizer = AuthorizerSchema.build(dataFetcherRunner, new HashSet<>(classpaths), authorizers);
 
 				Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
 
@@ -181,7 +187,10 @@ public class SchemaBuilder {
 				types.removeIf(t -> t.getDeclaredAnnotation(Entity.class) == null);
 				types.removeIf(t -> t.isAnonymousClass());
 
-				return new SchemaBuilder(scalars, diretivesSchema, authorizer).processTypes(types).process(endPoints).build(schemaConfiguration);
+				return new SchemaBuilder(dataFetcherRunner, scalars, diretivesSchema, authorizer)
+					.processTypes(types)
+					.process(endPoints)
+					.build(schemaConfiguration);
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
