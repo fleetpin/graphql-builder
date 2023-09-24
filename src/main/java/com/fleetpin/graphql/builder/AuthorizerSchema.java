@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class AuthorizerSchema {
 
@@ -158,7 +159,7 @@ public class AuthorizerSchema {
 					.asList(authorizer.getParameters())
 					.stream()
 					.map(parameter -> buildResolver(parameter.getName(), parameter.getType(), parameter.getAnnotations()))
-					.toList();
+					.collect(Collectors.toList());
 
 				DataFetcher<Object> authFetcher = env -> {
 					Object[] args = new Object[count];
