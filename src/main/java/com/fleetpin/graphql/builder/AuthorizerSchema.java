@@ -172,7 +172,7 @@ public class AuthorizerSchema {
 				};
 				return dataFetcherRunner.manage(authorizer, authFetcher);
 			})
-			.toList();
+			.collect(Collectors.toList());
 
 		return env -> {
 			for (var authorizer : authRunners) {
