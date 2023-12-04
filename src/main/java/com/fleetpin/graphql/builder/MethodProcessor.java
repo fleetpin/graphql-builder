@@ -63,7 +63,7 @@ class MethodProcessor {
 		object.field(process(authorizer, coordinates, null, method));
 	}
 
-	Builder process(AuthorizerSchema authorizer, FieldCoordinates coordinates, TypeMeta parentMeta, Method method) {
+	Builder process(AuthorizerSchema authorizer, FieldCoordinates coordinates, TypeMeta parentMeta, Method method) throws InvocationTargetException, IllegalAccessException {
 		GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
 
 		entityProcessor.addSchemaDirective(method, method.getDeclaringClass(), field::withAppliedDirective);
@@ -106,20 +106,19 @@ class MethodProcessor {
 				var annotationType = annotation.annotationType();
 				// Get the values out of the directive annotation
 				var methods = annotationType.getDeclaredMethods();
-				try {
-					var appliedDirective = new GraphQLAppliedDirective.Builder()
-							.name(annotationType.getName());
-					for (var definedMethod : methods) {
-						var name = definedMethod.getName();
-						var value = definedMethod.invoke(annotation);
-						appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument()
-								.name(name)
-								.type(Scalars.GraphQLString)
-								.valueLiteral(new StringValue((String) value))
-								.build());
-					}
-					argument.withAppliedDirective(appliedDirective);
-				} catch (Exception ignored) {}
+
+				var appliedDirective = new GraphQLAppliedDirective.Builder()
+						.name(annotationType.getName());
+				for (var definedMethod : methods) {
+					var name = definedMethod.getName();
+					var value = definedMethod.invoke(annotation);
+					appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument()
+							.name(name)
+							.type(Scalars.GraphQLString)
+							.valueLiteral(new StringValue((String) value))
+							.build());
+				}
+				argument.withAppliedDirective(appliedDirective);
 			}
 
 			argument.name(method.getParameters()[i].getName());
