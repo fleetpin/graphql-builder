@@ -31,18 +31,17 @@ import org.reflections.scanners.Scanners;
 
 public class SchemaBuilder {
 
-	private final DirectivesSchema diretives;
+	private final DirectivesSchema directives;
 	private final AuthorizerSchema authorizer;
-
 	private final EntityProcessor entityProcessor;
 
-	private SchemaBuilder(DataFetcherRunner dataFetcherRunner, List<GraphQLScalarType> scalars, DirectivesSchema diretives, AuthorizerSchema authorizer) {
-		this.diretives = diretives;
+	private SchemaBuilder(DataFetcherRunner dataFetcherRunner, List<GraphQLScalarType> scalars, DirectivesSchema directives, AuthorizerSchema authorizer) {
+		this.directives = directives;
 		this.authorizer = authorizer;
 
-		this.entityProcessor = new EntityProcessor(dataFetcherRunner, scalars, diretives);
+		this.entityProcessor = new EntityProcessor(dataFetcherRunner, scalars, directives);
 
-		diretives.processSDL(entityProcessor);
+		directives.processSDL(entityProcessor);
 	}
 
 	private SchemaBuilder processTypes(Set<Class<?>> types) {
@@ -83,10 +82,10 @@ public class SchemaBuilder {
 			builder.subscription(subscriptions);
 		}
 
-		diretives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
+		directives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
 
 		for (var schema : schemaConfiguration) {
-			this.diretives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
+			this.directives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
 		}
 		return builder;
 	}
