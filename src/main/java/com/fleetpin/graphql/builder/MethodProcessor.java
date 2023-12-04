@@ -97,6 +97,7 @@ class MethodProcessor {
 				argument.description(description.value());
 			}
 
+			// TODO: TEST THE PARAMETER DIRECTIVE
 			var parameter = method.getParameters()[i];
 			for (Annotation annotation : parameter.getAnnotations()) {
 				// Check to see if the annotation is a directive
@@ -108,10 +109,11 @@ class MethodProcessor {
 				var methods = annotationType.getDeclaredMethods();
 
 				var appliedDirective = new GraphQLAppliedDirective.Builder()
-						.name(annotationType.getName());
+						.name(annotationType.getSimpleName());
 				for (var definedMethod : methods) {
 					var name = definedMethod.getName();
 					var value = definedMethod.invoke(annotation);
+					if (value == null) {continue;}
 					appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument()
 							.name(name)
 							.type(Scalars.GraphQLString)
