@@ -11,30 +11,20 @@
  */
 package com.fleetpin.graphql.builder.scalar;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import com.fleetpin.graphql.builder.SDLDirective;
 import com.fleetpin.graphql.builder.annotations.Directive;
+import com.fleetpin.graphql.builder.annotations.DirectiveLocations;
 import graphql.introspection.Introspection.DirectiveLocation;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.List;
 
-@Directive(Capture.Processor.class)
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+@Directive()
 @Retention(RUNTIME)
 @Target({ ElementType.TYPE })
+@DirectiveLocations(DirectiveLocation.OBJECT)
 public @interface Capture {
-	static class Processor implements SDLDirective<Capture, CaptureType> {
 
-		@Override
-		public List<graphql.introspection.Introspection.DirectiveLocation> validLocations() {
-			return List.of(DirectiveLocation.FIELD_DEFINITION, DirectiveLocation.SCHEMA);
-		}
-
-		@Override
-		public CaptureType build(Capture annotation, Class<?> location) {
-			return new CaptureType();
-		}
-	}
 }

@@ -15,20 +15,22 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.fleetpin.graphql.builder.DirectiveCaller;
 import com.fleetpin.graphql.builder.annotations.Directive;
+import com.fleetpin.graphql.builder.annotations.DirectiveLocations;
+import graphql.introspection.Introspection;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-@Directive(Admin.Processor.class)
+@Directive(caller = Admin.Processor.class)
 @Retention(RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
+@DirectiveLocations({Introspection.DirectiveLocation.FIELD_DEFINITION, Introspection.DirectiveLocation.SCHEMA})
 public @interface Admin {
 	String value();
 
 	static class Processor implements DirectiveCaller<Admin> {
-
 		@Override
 		public Object process(Admin annotation, DataFetchingEnvironment env, DataFetcher<?> fetcher) throws Exception {
 			if (env.getArgument("name").equals(annotation.value())) {
