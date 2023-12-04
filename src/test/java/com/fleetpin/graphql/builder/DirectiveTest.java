@@ -11,18 +11,20 @@
  */
 package com.fleetpin.graphql.builder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionWithDirectivesSupport;
 import graphql.schema.FieldCoordinates;
-import java.util.Map;
+import graphql.schema.GraphQLSchema;
 import org.junit.jupiter.api.Test;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DirectiveTest {
 
@@ -69,12 +71,38 @@ public class DirectiveTest {
 		assertTrue(response.getErrors().get(0).getMessage().contains("forbidden"));
 	}
 
+	@Test
+	public void testDirectiveArgument() {
+		GraphQL schema = GraphQL.newGraphQL(SchemaBuilder.build("com.fleetpin.graphql.builder.type.directive")).build();
+		var cat = schema.getGraphQLSchema().getFieldDefinition(FieldCoordinates.coordinates(schema.getGraphQLSchema().getQueryType(), "getNickname"));
+		var argument = cat.getArgument("nickName");
+		var directive = argument.getAppliedDirective("Input");
+		assertNotNull(directive);
+		var value = directive.getArgument("value").getValue();
+		assertEquals("TT", value);
+	}
+
+	@Test
+	public void testDirectiveArgumentDefinition() {
+		Map<String, Object> response = execute("query IntrospectionQuery { __schema { directives { name locations args { name } } } }",
+				null).getData();
+		List<LinkedHashMap<String, Object>> dir = (List<LinkedHashMap<String, Object>>) ((Map<String, Object>)response.get("__schema")).get("directives");
+		LinkedHashMap<String, Object> input = dir.stream().filter(map -> map.get("name").equals("Input")).collect(Collectors.toList()).get(0);
+
+		assertEquals(7, dir.size());
+		assertEquals("ARGUMENT_DEFINITION", ((List<String>)input.get("locations")).get(0));
+		assertEquals(1, ((List<Object>)input.get("args")).size());
+
+		//getNickname(nickName: String! @Input(value : "TT")): String!
+		//directive @Input(value: String!) on ARGUMENT_DEFINITION
+	}
+
 	private ExecutionResult execute(String query, Map<String, Object> variables) {
+		GraphQLSchema preSchema = SchemaBuilder.builder().classpath("com.fleetpin.graphql.builder.type.directive").build().build();
 		GraphQL schema = GraphQL
-			.newGraphQL(
-				new IntrospectionWithDirectivesSupport().apply(SchemaBuilder.builder().classpath("com.fleetpin.graphql.builder.type.directive").build().build())
-			)
+			.newGraphQL(new IntrospectionWithDirectivesSupport().apply(preSchema))
 			.build();
+
 		var input = ExecutionInput.newExecutionInput();
 		input.query(query);
 		if (variables != null) {

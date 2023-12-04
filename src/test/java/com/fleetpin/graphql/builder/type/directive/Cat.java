@@ -30,7 +30,7 @@ public class Cat {
 	}
 
 	@Query
-	@Capture("meow")
+	@Capture(color = "meow")
 	public static Cat getCat() {
 		return new Cat();
 	}
@@ -45,5 +45,10 @@ public class Cat {
 	@Admin("tabby")
 	public static String allowed(String name) {
 		return name;
+	}
+
+	@Query
+	public static String getNickname(@Input("TT") String nickName) {
+		return nickName;
 	}
 }
