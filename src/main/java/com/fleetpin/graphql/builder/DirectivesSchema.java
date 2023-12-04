@@ -23,6 +23,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -35,27 +36,23 @@ class DirectivesSchema {
 
 	private final Collection<RestrictTypeFactory<?>> global;
 	private final Map<Class<? extends Annotation>, DirectiveCaller<?>> targets;
-	private final Map<Class<? extends Annotation>, SDLDirective<?, ?>> schemaDirective;
-	private Map<Class<? extends Annotation>, SDLProcessor> sdlProcessors; // TODO: REMOVE
 	private final Collection<Class<? extends Annotation>> directives;
 	private Map<Class<? extends Annotation>, DirectiveProcessor> directiveProcessors;
 
 	private DirectivesSchema(
 		Collection<RestrictTypeFactory<?>> global,
 		Map<Class<? extends Annotation>, DirectiveCaller<?>> targets,
-		Map<Class<? extends Annotation>, SDLDirective<?, ?>> schemaDirective,
 		Collection<Class<? extends Annotation>> directives
 	) {
 		this.global = global;
 		this.targets = targets;
-		this.schemaDirective = schemaDirective;
 		this.directives = directives;
 	}
 
 	//TODO:mess of exceptions
 	public static DirectivesSchema build(List<RestrictTypeFactory<?>> globalDirectives, Set<Class<?>> directiveTypes) throws ReflectiveOperationException {
-		Map<Class<? extends Annotation>, DirectiveCaller<?>> targets = new HashMap<>(); // TODO: Remove this
-		Map<Class<? extends Annotation>, SDLDirective<?, ?>> graphqlDirective = new HashMap<>(); // TODO: Remove this and above line, keeping as to not cause abundant errors
+		Map<Class<? extends Annotation>, DirectiveCaller<?>> targets = new HashMap<>();
+
 
 		Collection<Class<? extends Annotation>> allDirectives = new ArrayList<>();
 		for (Class<?> directiveType : directiveTypes) {
@@ -68,10 +65,28 @@ class DirectivesSchema {
 			if (!directiveType.isAnnotationPresent(DirectiveLocations.class)) {
 				throw new RuntimeException("@DirectiveLocations must be specified");
 			}
-			allDirectives.add((Class<? extends Annotation>) directiveType);
+
+			var directive = directiveType.getAnnotation(Directive.class);
+			Class<? extends DirectiveOperation<?>> caller = directive.caller();
+
+			// If the caller hasn't been set and therefore is a default value means it is a regular GraphQLDirective
+			if (caller == Directive.Processor.class) {
+				allDirectives.add((Class<? extends Annotation>) directiveType);
+				continue;
+			}
+
+			Class<?> target = (Class<?>) ((ParameterizedType) caller.getGenericInterfaces()[0]).getActualTypeArguments()[0];
+
+			if (DirectiveCaller.class.isAssignableFrom(caller)) {
+				// TODO error for no zero args constructor
+				var callerInstance = (DirectiveCaller<?>) caller.getConstructor().newInstance();
+				targets.put((Class<? extends Annotation>) directiveType, callerInstance);
+			} else {
+				allDirectives.add((Class<? extends Annotation>) directiveType);
+			}
 		}
 
-		return new DirectivesSchema(globalDirectives, targets, graphqlDirective, allDirectives);
+		return new DirectivesSchema(globalDirectives, targets, allDirectives);
 	}
 
 	private DirectiveCaller<?> get(Annotation annotation) {
@@ -208,15 +223,6 @@ class DirectivesSchema {
 				}
             }
 		}
-	}
-
-	public void processSDL(EntityProcessor entityProcessor) { // TODO: Replace this with processDirectives
-		Map<Class<? extends Annotation>, SDLProcessor> sdlProcessors = new HashMap<>();
-
-		this.schemaDirective.forEach((k, v) -> {
-				sdlProcessors.put(k, SDLProcessor.build(entityProcessor, v));
-			});
-		this.sdlProcessors = sdlProcessors;
 	}
 
 	public void processDirectives(EntityProcessor ep) { // Replacement of processSDL
