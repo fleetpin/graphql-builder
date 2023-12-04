@@ -76,7 +76,7 @@ public class DirectiveProcessor {
         return new DirectiveProcessor(builder.build(), builders);
     }
 
-    public void apply(Annotation annotation, EntityProcessor entityProcessor, Consumer<GraphQLAppliedDirective> builder) throws InvocationTargetException, IllegalAccessException {
+    public void apply(Annotation annotation, Consumer<GraphQLAppliedDirective> builder) throws InvocationTargetException, IllegalAccessException {
         var methods = annotation.annotationType().getDeclaredMethods();
 
         // Create a new AppliedDirective which we will populate with the set values

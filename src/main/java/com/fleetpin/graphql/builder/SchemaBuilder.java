@@ -41,7 +41,8 @@ public class SchemaBuilder {
 
 		this.entityProcessor = new EntityProcessor(dataFetcherRunner, scalars, directives);
 
-		directives.processSDL(entityProcessor);
+		directives.processDirectives(entityProcessor); // Replacement of processSDL
+//		directives.processSDL(entityProcessor); // TODO: Remove
 	}
 
 	private SchemaBuilder processTypes(Set<Class<?>> types) {
@@ -82,10 +83,10 @@ public class SchemaBuilder {
 			builder.subscription(subscriptions);
 		}
 
-		directives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
+		directives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive)); // TODO: This is where all of the directives are added into the actual schema
 
 		for (var schema : schemaConfiguration) {
-			this.directives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
+			this.directives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective); // TODO: This part too.
 		}
 		return builder;
 	}
@@ -171,7 +172,7 @@ public class SchemaBuilder {
 					}
 				}
 
-				DirectivesSchema directivesSchema = DirectivesSchema.build(globalRestricts, directivesTypes);
+				DirectivesSchema directivesSchema = DirectivesSchema.build(globalRestricts, directivesTypes); // Entry point for directives
 
 				Set<Class<?>> types = reflections.getTypesAnnotatedWith(Entity.class);
 
