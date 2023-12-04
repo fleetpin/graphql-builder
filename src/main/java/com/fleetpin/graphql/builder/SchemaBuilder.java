@@ -138,7 +138,7 @@ public class SchemaBuilder {
 
 				Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
 
-				Set<Class<?>> dierctivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
+				Set<Class<?>> directivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
 
 				Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
 				Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
@@ -171,7 +171,7 @@ public class SchemaBuilder {
 					}
 				}
 
-				DirectivesSchema diretivesSchema = DirectivesSchema.build(globalRestricts, dierctivesTypes);
+				DirectivesSchema directivesSchema = DirectivesSchema.build(globalRestricts, directivesTypes);
 
 				Set<Class<?>> types = reflections.getTypesAnnotatedWith(Entity.class);
 
@@ -186,7 +186,7 @@ public class SchemaBuilder {
 				types.removeIf(t -> t.getDeclaredAnnotation(Entity.class) == null);
 				types.removeIf(t -> t.isAnonymousClass());
 
-				return new SchemaBuilder(dataFetcherRunner, scalars, diretivesSchema, authorizer)
+				return new SchemaBuilder(dataFetcherRunner, scalars, directivesSchema, authorizer)
 					.processTypes(types)
 					.process(endPoints)
 					.build(schemaConfiguration);
