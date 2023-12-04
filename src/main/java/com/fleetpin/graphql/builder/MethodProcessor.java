@@ -2,20 +2,13 @@ package com.fleetpin.graphql.builder;
 
 import static com.fleetpin.graphql.builder.EntityUtil.isContext;
 
-import com.fleetpin.graphql.builder.annotations.GraphQLDeprecated;
-import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
-import com.fleetpin.graphql.builder.annotations.Mutation;
-import com.fleetpin.graphql.builder.annotations.Query;
-import com.fleetpin.graphql.builder.annotations.Subscription;
+import com.fleetpin.graphql.builder.annotations.*;
 import graphql.GraphQLContext;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLFieldDefinition;
+import graphql.Scalars;
+import graphql.language.StringValue;
+import graphql.schema.*;
 import graphql.schema.GraphQLFieldDefinition.Builder;
-import graphql.schema.GraphQLObjectType;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -102,6 +95,31 @@ class MethodProcessor {
 			description = method.getParameters()[i].getAnnotation(GraphQLDescription.class);
 			if (description != null) {
 				argument.description(description.value());
+			}
+
+			var parameter = method.getParameters()[i];
+			for (Annotation annotation : parameter.getAnnotations()) {
+				// Check to see if the annotation is a directive
+				if (!annotation.annotationType().isAnnotationPresent(Directive.class)) {
+					continue;
+				}
+				var annotationType = annotation.annotationType();
+				// Get the values out of the directive annotation
+				var methods = annotationType.getDeclaredMethods();
+				try {
+					var appliedDirective = new GraphQLAppliedDirective.Builder()
+							.name(annotationType.getName());
+					for (var definedMethod : methods) {
+						var name = definedMethod.getName();
+						var value = definedMethod.invoke(annotation);
+						appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument()
+								.name(name)
+								.type(Scalars.GraphQLString)
+								.valueLiteral(new StringValue((String) value))
+								.build());
+					}
+					argument.withAppliedDirective(appliedDirective);
+				} catch (Exception ignored) {}
 			}
 
 			argument.name(method.getParameters()[i].getName());
