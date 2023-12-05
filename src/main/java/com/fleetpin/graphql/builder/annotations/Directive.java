@@ -15,6 +15,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.fleetpin.graphql.builder.DirectiveCaller;
 import com.fleetpin.graphql.builder.DirectiveOperation;
+import graphql.introspection.Introspection;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 
@@ -26,9 +27,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.ANNOTATION_TYPE)
 public @interface Directive {
 	Class<? extends DirectiveOperation<?>> caller() default Directive.Processor.class;
+	Introspection.DirectiveLocation[] locations();
 
+	// All of this below is ignored and checked for when building the schema/directives
 	static class Processor implements DirectiveCaller<Directive> {
-
 		@Override
 		public Object process(Directive annotation, DataFetchingEnvironment env, DataFetcher<?> fetcher) throws Exception {
 			return null;

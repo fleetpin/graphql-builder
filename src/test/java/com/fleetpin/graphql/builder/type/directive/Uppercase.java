@@ -12,7 +12,6 @@
 package com.fleetpin.graphql.builder.type.directive;
 
 import com.fleetpin.graphql.builder.annotations.Directive;
-import com.fleetpin.graphql.builder.annotations.DirectiveLocations;
 import graphql.introspection.Introspection;
 
 import java.lang.annotation.ElementType;
@@ -21,10 +20,9 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Directive
+@Directive(locations = Introspection.DirectiveLocation.FIELD_DEFINITION)
 @Retention(RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
-@DirectiveLocations({Introspection.DirectiveLocation.FIELD_DEFINITION})
 public @interface Uppercase {
 
 }

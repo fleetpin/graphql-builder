@@ -12,7 +12,6 @@
 package com.fleetpin.graphql.builder.scalar;
 
 import com.fleetpin.graphql.builder.annotations.Directive;
-import com.fleetpin.graphql.builder.annotations.DirectiveLocations;
 import graphql.introspection.Introspection.DirectiveLocation;
 
 import java.lang.annotation.ElementType;
@@ -21,10 +20,9 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Directive()
+@Directive(locations = DirectiveLocation.OBJECT)
 @Retention(RUNTIME)
 @Target({ ElementType.TYPE })
-@DirectiveLocations(DirectiveLocation.OBJECT)
 public @interface Capture {
 
 }

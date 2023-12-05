@@ -14,18 +14,15 @@ package com.fleetpin.graphql.builder.type.directive;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import com.fleetpin.graphql.builder.annotations.Directive;
-import com.fleetpin.graphql.builder.annotations.DirectiveLocations;
 import graphql.introspection.Introspection;
 import graphql.introspection.Introspection.DirectiveLocation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.List;
 
-@Directive
+@Directive(locations = {Introspection.DirectiveLocation.FIELD_DEFINITION, DirectiveLocation.SCHEMA})
 @Retention(RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
-@DirectiveLocations({Introspection.DirectiveLocation.FIELD_DEFINITION, DirectiveLocation.SCHEMA})
 public @interface Capture {
 	String color();
 }
