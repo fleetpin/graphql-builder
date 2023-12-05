@@ -11,14 +11,7 @@
  */
 package com.fleetpin.graphql.builder;
 
-import com.fleetpin.graphql.builder.annotations.Directive;
-import com.fleetpin.graphql.builder.annotations.Entity;
-import com.fleetpin.graphql.builder.annotations.Mutation;
-import com.fleetpin.graphql.builder.annotations.Query;
-import com.fleetpin.graphql.builder.annotations.Restrict;
-import com.fleetpin.graphql.builder.annotations.Restricts;
-import com.fleetpin.graphql.builder.annotations.SchemaOption;
-import com.fleetpin.graphql.builder.annotations.Subscription;
+import com.fleetpin.graphql.builder.annotations.*;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import java.lang.reflect.Method;
@@ -139,6 +132,7 @@ public class SchemaBuilder {
 				Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
 
 				Set<Class<?>> directivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
+				directivesTypes.addAll(reflections.getTypesAnnotatedWith(DataFetcherWrapper.class));
 
 				Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
 				Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
