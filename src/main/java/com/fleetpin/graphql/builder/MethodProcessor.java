@@ -107,18 +107,8 @@ class MethodProcessor {
 				// Get the values out of the directive annotation
 				var methods = annotationType.getDeclaredMethods();
 
-				var appliedDirective = new GraphQLAppliedDirective.Builder()
-						.name(annotationType.getSimpleName());
-				for (var definedMethod : methods) {
-					var name = definedMethod.getName();
-					var value = definedMethod.invoke(annotation);
-					if (value == null) {continue;}
-					appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument()
-							.name(name)
-							.type(Scalars.GraphQLString)
-							.valueLiteral(new StringValue((String) value))
-							.build());
-				}
+				// Get the applied directive and add it to the argument
+				var appliedDirective = getAppliedDirective(annotation, annotationType, methods);
 				argument.withAppliedDirective(appliedDirective);
 			}
 
@@ -130,6 +120,25 @@ class MethodProcessor {
 		DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
 		codeRegistry.dataFetcher(coordinates, fetcher);
 		return field;
+	}
+
+	private GraphQLAppliedDirective getAppliedDirective(Annotation annotation, Class<? extends Annotation> annotationType, Method[] methods) throws IllegalAccessException, InvocationTargetException {
+		var appliedDirective = new GraphQLAppliedDirective.Builder()
+				.name(annotationType.getSimpleName());
+		for (var definedMethod : methods) {
+			var name = definedMethod.getName();
+			var value = definedMethod.invoke(annotation);
+			if (value == null) {continue;}
+
+			TypeMeta innerMeta = new TypeMeta(null, definedMethod.getReturnType(), definedMethod.getGenericReturnType());
+			var argumentType = entityProcessor.getEntity(innerMeta).getInputType(innerMeta, definedMethod.getAnnotations());
+			appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument()
+					.name(name)
+					.type(argumentType)
+					.valueProgrammatic(value)
+					.build());
+		}
+		return appliedDirective.build();
 	}
 
 	private <T extends Annotation> DataFetcher<?> buildFetcher(DirectivesSchema diretives, AuthorizerSchema authorizer, Method method, TypeMeta meta) {
