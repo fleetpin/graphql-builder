@@ -71,8 +71,6 @@ class DirectivesSchema {
 				continue;
 			}
 
-			Class<?> target = (Class<?>) ((ParameterizedType) caller.getGenericInterfaces()[0]).getActualTypeArguments()[0];
-
 			if (DirectiveCaller.class.isAssignableFrom(caller)) {
 				// TODO error for no zero args constructor
 				var callerInstance = (DirectiveCaller<?>) caller.getConstructor().newInstance();
@@ -95,8 +93,7 @@ class DirectivesSchema {
 		};
 	}
 
-	public Stream<GraphQLDirective> getSchemaDirective() { // TODO: This is where the SchemaBuilder turns the annotations into GraphQLDirectives
-//		return sdlProcessors.values().stream().map(SDLProcessor::getDirective); TODO: REMOVE
+	public Stream<GraphQLDirective> getSchemaDirective() {
 		return directiveProcessors.values().stream().map(DirectiveProcessor::getDirective);
 	}
 
@@ -104,24 +101,22 @@ class DirectivesSchema {
 		//TODO: hate having this cache here would love to scope against the env object but nothing to hook into dataload caused global leak
 		Map<DataFetchingEnvironment, CompletableFuture<RestrictType>> cache = Collections.synchronizedMap(new WeakHashMap<>());
 
-		return env -> {
-			return cache
-				.computeIfAbsent(env, key -> directive.create(key).thenApply(t -> t))
-				.thenCompose(restrict -> {
-					try {
-						Object response = fetcher.get(env);
-						if (response instanceof CompletionStage) {
-							return ((CompletionStage) response).thenCompose(r -> applyRestrict(restrict, r));
-						}
-						return applyRestrict(restrict, response);
-					} catch (Exception e) {
-						if (e instanceof RuntimeException) {
-							throw (RuntimeException) e;
-						}
-						throw new RuntimeException(e);
+		return env -> cache
+			.computeIfAbsent(env, key -> directive.create(key).thenApply(t -> t))
+			.thenCompose(restrict -> {
+				try {
+					Object response = fetcher.get(env);
+					if (response instanceof CompletionStage) {
+						return ((CompletionStage) response).thenCompose(r -> applyRestrict(restrict, r));
 					}
-				});
-		};
+					return applyRestrict(restrict, response);
+				} catch (Exception e) {
+					if (e instanceof RuntimeException) {
+						throw (RuntimeException) e;
+					}
+					throw new RuntimeException(e);
+				}
+			});
 	}
 
 	public boolean target(Method method, TypeMeta meta) {
@@ -208,7 +203,7 @@ class DirectivesSchema {
 			);
 	}
 
-	public void addSchemaDirective(AnnotatedElement element, Class<?> location, Consumer<GraphQLAppliedDirective> builder) { // TODO: This is also probably important
+	public void addSchemaDirective(AnnotatedElement element, Class<?> location, Consumer<GraphQLAppliedDirective> builder) {
 		for (Annotation annotation : element.getAnnotations()) {
 			var processor = this.directiveProcessors.get(annotation.annotationType());
 			if (processor != null) {

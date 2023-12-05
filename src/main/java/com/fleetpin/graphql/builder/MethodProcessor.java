@@ -97,7 +97,6 @@ class MethodProcessor {
 				argument.description(description.value());
 			}
 
-			// TODO: TEST THE PARAMETER DIRECTIVE
 			var parameter = method.getParameters()[i];
 			for (Annotation annotation : parameter.getAnnotations()) {
 				// Check to see if the annotation is a directive

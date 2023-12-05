@@ -15,17 +15,13 @@ public class DirectiveProcessor {
 
     private final GraphQLDirective directive;
     private final Map<String, Function<Object, GraphQLAppliedDirectiveArgument>> builders;
-//    private final Map<String, GraphQLInputType> methodTypes; TODO: Deal with this too
 
     public DirectiveProcessor(GraphQLDirective directive, Map<String, Function<Object, GraphQLAppliedDirectiveArgument>> builders) {
         this.directive = directive;
         this.builders = builders;
-//        this.methodTypes = methodTypes; TODO: DEAL WITH THIS
     }
 
     public static DirectiveProcessor build(EntityProcessor entityProcessor, Class<? extends Annotation> directive) {
-        var processedDirectives = new ArrayList<GraphQLDirective>();
-
 
         var builder = GraphQLDirective.newDirective().name(directive.getSimpleName());
         var validLocations = directive.getAnnotation(Directive.class).locations();
@@ -33,9 +29,6 @@ public class DirectiveProcessor {
         for (Introspection.DirectiveLocation location : validLocations) {
             builder.validLocation(location);
         }
-
-        // Save method types so when we apply the values later we don't have to go looking for them
-        Map<String, GraphQLInputType> methodTypes = new HashMap<>();
 
         // Go through each argument and add name/type to directive
         var methods = directive.getDeclaredMethods();
