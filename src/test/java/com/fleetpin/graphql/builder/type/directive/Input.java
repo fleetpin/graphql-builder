@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Directive(locations = Introspection.DirectiveLocation.ARGUMENT_DEFINITION)
+@Directive(Introspection.DirectiveLocation.ARGUMENT_DEFINITION)
 @Retention(RUNTIME)
 @Target({ ElementType.PARAMETER })
 public @interface Input {

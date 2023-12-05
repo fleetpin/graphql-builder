@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Directive(locations = DirectiveLocation.OBJECT)
+@Directive(DirectiveLocation.OBJECT)
 @Retention(RUNTIME)
 @Target({ ElementType.TYPE })
 public @interface Capture {

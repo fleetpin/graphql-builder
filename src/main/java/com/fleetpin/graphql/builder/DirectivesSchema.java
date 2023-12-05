@@ -11,6 +11,7 @@
  */
 package com.fleetpin.graphql.builder;
 
+import com.fleetpin.graphql.builder.annotations.DataFetcherWrapper;
 import com.fleetpin.graphql.builder.annotations.Directive;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -55,29 +56,23 @@ class DirectivesSchema {
 
 		Collection<Class<? extends Annotation>> allDirectives = new ArrayList<>();
 		for (Class<?> directiveType : directiveTypes) {
+			if (directiveType.isAnnotationPresent(DataFetcherWrapper.class)) {
+				// TODO: Add logic for DataFetcherWrapper here
+				Class<? extends DirectiveOperation<?>> caller = directiveType.getAnnotation(DataFetcherWrapper.class).value();
+				if (DirectiveCaller.class.isAssignableFrom(caller)) {
+					// TODO error for no zero args constructor
+					var callerInstance = (DirectiveCaller<?>) caller.getConstructor().newInstance();
+					targets.put((Class<? extends Annotation>) directiveType, callerInstance);
+				}
+				continue;
+			}
 			if (!directiveType.isAnnotationPresent(Directive.class)) {
 				continue;
 			}
 			if (!directiveType.isAnnotation()) {
 				throw new RuntimeException("@Directive Annotation must only be placed on annotations");
 			}
-
-			var directive = directiveType.getAnnotation(Directive.class);
-			Class<? extends DirectiveOperation<?>> caller = directive.caller();
-
-			// If the caller hasn't been set and therefore is a default value means it is a regular GraphQLDirective
-			if (caller == Directive.Processor.class) {
-				allDirectives.add((Class<? extends Annotation>) directiveType);
-				continue;
-			}
-
-			if (DirectiveCaller.class.isAssignableFrom(caller)) {
-				// TODO error for no zero args constructor
-				var callerInstance = (DirectiveCaller<?>) caller.getConstructor().newInstance();
-				targets.put((Class<? extends Annotation>) directiveType, callerInstance);
-			} else {
-				allDirectives.add((Class<? extends Annotation>) directiveType);
-			}
+			allDirectives.add((Class<? extends Annotation>) directiveType);
 		}
 
 		return new DirectivesSchema(globalDirectives, targets, allDirectives);

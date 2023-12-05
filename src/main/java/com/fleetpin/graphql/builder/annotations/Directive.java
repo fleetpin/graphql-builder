@@ -26,14 +26,10 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Target(ElementType.ANNOTATION_TYPE)
 public @interface Directive {
-	Class<? extends DirectiveOperation<?>> caller() default Directive.Processor.class;
-	Introspection.DirectiveLocation[] locations();
+	Introspection.DirectiveLocation[] value();
 
-	// All of this below is ignored and checked for when building the schema/directives
-	static class Processor implements DirectiveCaller<Directive> {
-		@Override
-		public Object process(Directive annotation, DataFetchingEnvironment env, DataFetcher<?> fetcher) throws Exception {
-			return null;
-		}
-	}
+	boolean repeatable() default false;
+
 }
+
+

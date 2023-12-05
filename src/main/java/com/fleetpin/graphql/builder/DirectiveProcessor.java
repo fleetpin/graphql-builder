@@ -24,11 +24,14 @@ public class DirectiveProcessor {
     public static DirectiveProcessor build(EntityProcessor entityProcessor, Class<? extends Annotation> directive) {
 
         var builder = GraphQLDirective.newDirective().name(directive.getSimpleName());
-        var validLocations = directive.getAnnotation(Directive.class).locations();
+        var validLocations = directive.getAnnotation(Directive.class).value();
         // loop through and add valid locations
         for (Introspection.DirectiveLocation location : validLocations) {
             builder.validLocation(location);
         }
+
+        // Check for repeatable tag in annotation and add it
+        builder.repeatable(directive.getAnnotation(Directive.class).repeatable());
 
         // Go through each argument and add name/type to directive
         var methods = directive.getDeclaredMethods();

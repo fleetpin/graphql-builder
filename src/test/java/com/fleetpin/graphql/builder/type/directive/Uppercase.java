@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Directive(locations = Introspection.DirectiveLocation.FIELD_DEFINITION)
+@Directive(Introspection.DirectiveLocation.FIELD_DEFINITION)
 @Retention(RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface Uppercase {
