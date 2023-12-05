@@ -1,6 +1,6 @@
 package com.fleetpin.graphql.builder;
 
-import com.fleetpin.graphql.builder.annotations.DirectiveLocations;
+import com.fleetpin.graphql.builder.annotations.Directive;
 import graphql.introspection.Introspection;
 import graphql.schema.*;
 
@@ -28,7 +28,7 @@ public class DirectiveProcessor {
 
 
         var builder = GraphQLDirective.newDirective().name(directive.getSimpleName());
-        var validLocations = directive.getAnnotation(DirectiveLocations.class).value();
+        var validLocations = directive.getAnnotation(Directive.class).locations();
         // loop through and add valid locations
         for (Introspection.DirectiveLocation location : validLocations) {
             builder.validLocation(location);

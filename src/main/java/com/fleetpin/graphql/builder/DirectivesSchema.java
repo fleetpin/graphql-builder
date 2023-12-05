@@ -12,7 +12,6 @@
 package com.fleetpin.graphql.builder;
 
 import com.fleetpin.graphql.builder.annotations.Directive;
-import com.fleetpin.graphql.builder.annotations.DirectiveLocations;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLAppliedDirective;
@@ -61,9 +60,6 @@ class DirectivesSchema {
 			}
 			if (!directiveType.isAnnotation()) {
 				throw new RuntimeException("@Directive Annotation must only be placed on annotations");
-			}
-			if (!directiveType.isAnnotationPresent(DirectiveLocations.class)) {
-				throw new RuntimeException("@DirectiveLocations must be specified");
 			}
 
 			var directive = directiveType.getAnnotation(Directive.class);
