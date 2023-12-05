@@ -57,7 +57,6 @@ class DirectivesSchema {
 		Collection<Class<? extends Annotation>> allDirectives = new ArrayList<>();
 		for (Class<?> directiveType : directiveTypes) {
 			if (directiveType.isAnnotationPresent(DataFetcherWrapper.class)) {
-				// TODO: Add logic for DataFetcherWrapper here
 				Class<? extends DirectiveOperation<?>> caller = directiveType.getAnnotation(DataFetcherWrapper.class).value();
 				if (DirectiveCaller.class.isAssignableFrom(caller)) {
 					// TODO error for no zero args constructor
