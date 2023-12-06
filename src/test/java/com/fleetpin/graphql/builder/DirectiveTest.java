@@ -11,20 +11,19 @@
  */
 package com.fleetpin.graphql.builder;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionWithDirectivesSupport;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLSchema;
-import org.junit.jupiter.api.Test;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class DirectiveTest {
 
@@ -84,24 +83,20 @@ public class DirectiveTest {
 
 	@Test
 	public void testDirectiveArgumentDefinition() {
-		Map<String, Object> response = execute("query IntrospectionQuery { __schema { directives { name locations args { name } } } }",
-				null).getData();
-		List<LinkedHashMap<String, Object>> dir = (List<LinkedHashMap<String, Object>>) ((Map<String, Object>)response.get("__schema")).get("directives");
+		Map<String, Object> response = execute("query IntrospectionQuery { __schema { directives { name locations args { name } } } }", null).getData();
+		List<LinkedHashMap<String, Object>> dir = (List<LinkedHashMap<String, Object>>) ((Map<String, Object>) response.get("__schema")).get("directives");
 		LinkedHashMap<String, Object> input = dir.stream().filter(map -> map.get("name").equals("Input")).collect(Collectors.toList()).get(0);
 
 		assertEquals(7, dir.size());
-		assertEquals("ARGUMENT_DEFINITION", ((List<String>)input.get("locations")).get(0));
-		assertEquals(1, ((List<Object>)input.get("args")).size());
-
+		assertEquals("ARGUMENT_DEFINITION", ((List<String>) input.get("locations")).get(0));
+		assertEquals(1, ((List<Object>) input.get("args")).size());
 		//getNickname(nickName: String! @Input(value : "TT")): String!
 		//directive @Input(value: String!) on ARGUMENT_DEFINITION
 	}
 
 	private ExecutionResult execute(String query, Map<String, Object> variables) {
 		GraphQLSchema preSchema = SchemaBuilder.builder().classpath("com.fleetpin.graphql.builder.type.directive").build().build();
-		GraphQL schema = GraphQL
-			.newGraphQL(new IntrospectionWithDirectivesSupport().apply(preSchema))
-			.build();
+		GraphQL schema = GraphQL.newGraphQL(new IntrospectionWithDirectivesSupport().apply(preSchema)).build();
 
 		var input = ExecutionInput.newExecutionInput();
 		input.query(query);

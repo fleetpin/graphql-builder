@@ -8,7 +8,6 @@ import graphql.Scalars;
 import graphql.language.StringValue;
 import graphql.schema.*;
 import graphql.schema.GraphQLFieldDefinition.Builder;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -63,7 +62,8 @@ class MethodProcessor {
 		object.field(process(authorizer, coordinates, null, method));
 	}
 
-	Builder process(AuthorizerSchema authorizer, FieldCoordinates coordinates, TypeMeta parentMeta, Method method) throws InvocationTargetException, IllegalAccessException {
+	Builder process(AuthorizerSchema authorizer, FieldCoordinates coordinates, TypeMeta parentMeta, Method method)
+		throws InvocationTargetException, IllegalAccessException {
 		GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
 
 		entityProcessor.addSchemaDirective(method, method.getDeclaringClass(), field::withAppliedDirective);
@@ -122,21 +122,19 @@ class MethodProcessor {
 		return field;
 	}
 
-	private GraphQLAppliedDirective getAppliedDirective(Annotation annotation, Class<? extends Annotation> annotationType, Method[] methods) throws IllegalAccessException, InvocationTargetException {
-		var appliedDirective = new GraphQLAppliedDirective.Builder()
-				.name(annotationType.getSimpleName());
+	private GraphQLAppliedDirective getAppliedDirective(Annotation annotation, Class<? extends Annotation> annotationType, Method[] methods)
+		throws IllegalAccessException, InvocationTargetException {
+		var appliedDirective = new GraphQLAppliedDirective.Builder().name(annotationType.getSimpleName());
 		for (var definedMethod : methods) {
 			var name = definedMethod.getName();
 			var value = definedMethod.invoke(annotation);
-			if (value == null) {continue;}
+			if (value == null) {
+				continue;
+			}
 
 			TypeMeta innerMeta = new TypeMeta(null, definedMethod.getReturnType(), definedMethod.getGenericReturnType());
 			var argumentType = entityProcessor.getEntity(innerMeta).getInputType(innerMeta, definedMethod.getAnnotations());
-			appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument()
-					.name(name)
-					.type(argumentType)
-					.valueProgrammatic(value)
-					.build());
+			appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument().name(name).type(argumentType).valueProgrammatic(value).build());
 		}
 		return appliedDirective.build();
 	}

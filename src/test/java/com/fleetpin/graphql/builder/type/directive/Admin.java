@@ -30,6 +30,7 @@ public @interface Admin {
 	String value();
 
 	static class Processor implements DirectiveCaller<Admin> {
+
 		@Override
 		public Object process(Admin annotation, DataFetchingEnvironment env, DataFetcher<?> fetcher) throws Exception {
 			if (env.getArgument("name").equals(annotation.value())) {

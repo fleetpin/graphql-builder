@@ -18,7 +18,6 @@ import com.fleetpin.graphql.builder.DirectiveOperation;
 import graphql.introspection.Introspection;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -29,7 +28,4 @@ public @interface Directive {
 	Introspection.DirectiveLocation[] value();
 
 	boolean repeatable() default false;
-
 }
-
-

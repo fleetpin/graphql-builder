@@ -17,8 +17,6 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLAppliedDirective;
 import graphql.schema.GraphQLDirective;
-import org.reactivestreams.Publisher;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
@@ -31,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.reactivestreams.Publisher;
 
 class DirectivesSchema {
 
@@ -52,7 +51,6 @@ class DirectivesSchema {
 	//TODO:mess of exceptions
 	public static DirectivesSchema build(List<RestrictTypeFactory<?>> globalDirectives, Set<Class<?>> directiveTypes) throws ReflectiveOperationException {
 		Map<Class<? extends Annotation>, DirectiveCaller<?>> targets = new HashMap<>();
-
 
 		Collection<Class<? extends Annotation>> allDirectives = new ArrayList<>();
 		for (Class<?> directiveType : directiveTypes) {
@@ -95,22 +93,23 @@ class DirectivesSchema {
 		//TODO: hate having this cache here would love to scope against the env object but nothing to hook into dataload caused global leak
 		Map<DataFetchingEnvironment, CompletableFuture<RestrictType>> cache = Collections.synchronizedMap(new WeakHashMap<>());
 
-		return env -> cache
-			.computeIfAbsent(env, key -> directive.create(key).thenApply(t -> t))
-			.thenCompose(restrict -> {
-				try {
-					Object response = fetcher.get(env);
-					if (response instanceof CompletionStage) {
-						return ((CompletionStage) response).thenCompose(r -> applyRestrict(restrict, r));
+		return env ->
+			cache
+				.computeIfAbsent(env, key -> directive.create(key).thenApply(t -> t))
+				.thenCompose(restrict -> {
+					try {
+						Object response = fetcher.get(env);
+						if (response instanceof CompletionStage) {
+							return ((CompletionStage) response).thenCompose(r -> applyRestrict(restrict, r));
+						}
+						return applyRestrict(restrict, response);
+					} catch (Exception e) {
+						if (e instanceof RuntimeException) {
+							throw (RuntimeException) e;
+						}
+						throw new RuntimeException(e);
 					}
-					return applyRestrict(restrict, response);
-				} catch (Exception e) {
-					if (e instanceof RuntimeException) {
-						throw (RuntimeException) e;
-					}
-					throw new RuntimeException(e);
-				}
-			});
+				});
 	}
 
 	public boolean target(Method method, TypeMeta meta) {
@@ -206,16 +205,14 @@ class DirectivesSchema {
 				} catch (InvocationTargetException | IllegalAccessException e) {
 					throw new RuntimeException("Could not process applied directive: " + location.getName());
 				}
-            }
+			}
 		}
 	}
 
 	public void processDirectives(EntityProcessor ep) { // Replacement of processSDL
 		Map<Class<? extends Annotation>, DirectiveProcessor> directiveProcessors = new HashMap<>();
 
-		this.directives.forEach(dir ->
-			directiveProcessors.put(dir, DirectiveProcessor.build(ep, dir)));
+		this.directives.forEach(dir -> directiveProcessors.put(dir, DirectiveProcessor.build(ep, dir)));
 		this.directiveProcessors = directiveProcessors;
-
 	}
 }
