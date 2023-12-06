@@ -1,8 +1,19 @@
 name: Release
 permissions:
   contents: write
-on: 
-  workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      releaseType:
+        type: choice
+        description: "Release type"
+        required: true
+        default: minor
+        options:
+          - patch
+          - minor
+          - major
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -13,7 +24,7 @@ jobs:
       with:
         java-version: 11
     - name: Release
-      uses: qcastel/github-actions-maven-release@v1.11.1
+      uses: qcastel/github-actions-maven-release@v1.12.41
       with:
         release-branch-name: "master"
         maven-args: "-P sonatype"
@@ -27,5 +38,7 @@ jobs:
         maven-repo-server-id: sonatype
         maven-repo-server-username: ${{ secrets.MVN_REPO_PRIVATE_REPO_USER }}
         maven-repo-server-password: ${{ secrets.MVN_REPO_PRIVATE_REPO_PASSWORD }}
-        
+        version-major: ${{ github.event.inputs.releaseType == 'major '}}
+        version-minor: ${{ github.event.inputs.releaseType == 'minor '}}
+        version-patch: ${{ github.event.inputs.releaseType == 'patch '}}
         access-token: ${{ secrets.GITHUB_TOKEN }}
