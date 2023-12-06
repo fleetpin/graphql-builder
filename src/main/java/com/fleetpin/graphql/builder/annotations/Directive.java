@@ -13,7 +13,11 @@ package com.fleetpin.graphql.builder.annotations;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import com.fleetpin.graphql.builder.DirectiveCaller;
 import com.fleetpin.graphql.builder.DirectiveOperation;
+import graphql.introspection.Introspection;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -21,5 +25,7 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Target(ElementType.ANNOTATION_TYPE)
 public @interface Directive {
-	Class<? extends DirectiveOperation<?>> value();
+	Introspection.DirectiveLocation[] value();
+
+	boolean repeatable() default false;
 }

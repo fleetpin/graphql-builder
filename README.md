@@ -337,12 +337,42 @@ public class AssetRestrict implements RestrictType<Animal> {
 
 ## Directives
 These are similar to GraphQL directives but just implemented on the java model
-You define a custom annotation and add the `@Directive` to it
-This annotation in then passed into the DirectiveCaller allowing you to add options to the annotation if need be
+You define a custom annotation and add the `@Directive` to it.
+The directive annotation must contain an array of DirectiveLocations which will be used in the GraphQL definition.
+Any function defined in the annotation will be placed on the schema definition as an argument.
 
 ```java
 @Retention(RUNTIME)
-@Directive(AdminOnly.AdminOnlyDirective.class)
+@Directive( { Introspection.DirectiveLocation.FIELD_DEFINITION } )
+public @interface CustomDirective {
+    String input();
+}
+```
+This directive can now be placed where set:
+```java
+@Query
+@CustomDirective(input = "Custom Directive Contents")
+public static String sayHello() {
+  return "Hello world";
+}
+```
+Which will then end up on the schema like so
+```graphql
+directive @CustomDirective(input: String!) on FIELD_DEFINITION
+
+type Query {
+  sayHello: String! @CustomDirective(input: "Custom Directive Contents")
+}
+```
+
+## DataFetcherWrapper
+Similar to the setup of a Directive the DataFetcherWrapper is created as an 
+annotation. This annotation is then passed into the DirectiveCaller allowing 
+you to add options to the annotation if need be 
+
+```java
+@Retention(RUNTIME)
+@DataFetcherWrapper(AdminOnly.AdminOnlyDirective.class)
 public @interface AdminOnly {
   ...
 }

@@ -2,20 +2,12 @@ package com.fleetpin.graphql.builder;
 
 import static com.fleetpin.graphql.builder.EntityUtil.isContext;
 
-import com.fleetpin.graphql.builder.annotations.GraphQLDeprecated;
-import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
-import com.fleetpin.graphql.builder.annotations.Mutation;
-import com.fleetpin.graphql.builder.annotations.Query;
-import com.fleetpin.graphql.builder.annotations.Subscription;
+import com.fleetpin.graphql.builder.annotations.*;
 import graphql.GraphQLContext;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLFieldDefinition;
+import graphql.Scalars;
+import graphql.language.StringValue;
+import graphql.schema.*;
 import graphql.schema.GraphQLFieldDefinition.Builder;
-import graphql.schema.GraphQLObjectType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -70,7 +62,8 @@ class MethodProcessor {
 		object.field(process(authorizer, coordinates, null, method));
 	}
 
-	Builder process(AuthorizerSchema authorizer, FieldCoordinates coordinates, TypeMeta parentMeta, Method method) {
+	Builder process(AuthorizerSchema authorizer, FieldCoordinates coordinates, TypeMeta parentMeta, Method method)
+		throws InvocationTargetException, IllegalAccessException {
 		GraphQLFieldDefinition.Builder field = GraphQLFieldDefinition.newFieldDefinition();
 
 		entityProcessor.addSchemaDirective(method, method.getDeclaringClass(), field::withAppliedDirective);
@@ -104,6 +97,21 @@ class MethodProcessor {
 				argument.description(description.value());
 			}
 
+			var parameter = method.getParameters()[i];
+			for (Annotation annotation : parameter.getAnnotations()) {
+				// Check to see if the annotation is a directive
+				if (!annotation.annotationType().isAnnotationPresent(Directive.class)) {
+					continue;
+				}
+				var annotationType = annotation.annotationType();
+				// Get the values out of the directive annotation
+				var methods = annotationType.getDeclaredMethods();
+
+				// Get the applied directive and add it to the argument
+				var appliedDirective = getAppliedDirective(annotation, annotationType, methods);
+				argument.withAppliedDirective(appliedDirective);
+			}
+
 			argument.name(method.getParameters()[i].getName());
 			//TODO: argument.defaultValue(defaultValue)
 			field.argument(argument);
@@ -112,6 +120,23 @@ class MethodProcessor {
 		DataFetcher<?> fetcher = buildFetcher(diretives, authorizer, method, meta);
 		codeRegistry.dataFetcher(coordinates, fetcher);
 		return field;
+	}
+
+	private GraphQLAppliedDirective getAppliedDirective(Annotation annotation, Class<? extends Annotation> annotationType, Method[] methods)
+		throws IllegalAccessException, InvocationTargetException {
+		var appliedDirective = new GraphQLAppliedDirective.Builder().name(annotationType.getSimpleName());
+		for (var definedMethod : methods) {
+			var name = definedMethod.getName();
+			var value = definedMethod.invoke(annotation);
+			if (value == null) {
+				continue;
+			}
+
+			TypeMeta innerMeta = new TypeMeta(null, definedMethod.getReturnType(), definedMethod.getGenericReturnType());
+			var argumentType = entityProcessor.getEntity(innerMeta).getInputType(innerMeta, definedMethod.getAnnotations());
+			appliedDirective.argument(GraphQLAppliedDirectiveArgument.newArgument().name(name).type(argumentType).valueProgrammatic(value).build());
+		}
+		return appliedDirective.build();
 	}
 
 	private <T extends Annotation> DataFetcher<?> buildFetcher(DirectivesSchema diretives, AuthorizerSchema authorizer, Method method, TypeMeta meta) {

@@ -13,28 +13,14 @@ package com.fleetpin.graphql.builder.type.directive;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.fleetpin.graphql.builder.SDLDirective;
 import com.fleetpin.graphql.builder.annotations.Directive;
-import graphql.introspection.Introspection.DirectiveLocation;
+import graphql.introspection.Introspection;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.List;
 
-@Directive(Uppercase.Processor.class)
+@Directive(Introspection.DirectiveLocation.FIELD_DEFINITION)
 @Retention(RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface Uppercase {
-	static class Processor implements SDLDirective<Uppercase, Uppercase> {
-
-		@Override
-		public List<graphql.introspection.Introspection.DirectiveLocation> validLocations() {
-			return List.of(DirectiveLocation.FIELD_DEFINITION);
-		}
-
-		@Override
-		public Uppercase build(Uppercase annotation, Class<?> location) {
-			return annotation;
-		}
-	}
 }

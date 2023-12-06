@@ -11,14 +11,7 @@
  */
 package com.fleetpin.graphql.builder;
 
-import com.fleetpin.graphql.builder.annotations.Directive;
-import com.fleetpin.graphql.builder.annotations.Entity;
-import com.fleetpin.graphql.builder.annotations.Mutation;
-import com.fleetpin.graphql.builder.annotations.Query;
-import com.fleetpin.graphql.builder.annotations.Restrict;
-import com.fleetpin.graphql.builder.annotations.Restricts;
-import com.fleetpin.graphql.builder.annotations.SchemaOption;
-import com.fleetpin.graphql.builder.annotations.Subscription;
+import com.fleetpin.graphql.builder.annotations.*;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import java.lang.reflect.Method;
@@ -31,18 +24,17 @@ import org.reflections.scanners.Scanners;
 
 public class SchemaBuilder {
 
-	private final DirectivesSchema diretives;
+	private final DirectivesSchema directives;
 	private final AuthorizerSchema authorizer;
-
 	private final EntityProcessor entityProcessor;
 
-	private SchemaBuilder(DataFetcherRunner dataFetcherRunner, List<GraphQLScalarType> scalars, DirectivesSchema diretives, AuthorizerSchema authorizer) {
-		this.diretives = diretives;
+	private SchemaBuilder(DataFetcherRunner dataFetcherRunner, List<GraphQLScalarType> scalars, DirectivesSchema directives, AuthorizerSchema authorizer) {
+		this.directives = directives;
 		this.authorizer = authorizer;
 
-		this.entityProcessor = new EntityProcessor(dataFetcherRunner, scalars, diretives);
+		this.entityProcessor = new EntityProcessor(dataFetcherRunner, scalars, directives);
 
-		diretives.processSDL(entityProcessor);
+		directives.processDirectives(entityProcessor);
 	}
 
 	private SchemaBuilder processTypes(Set<Class<?>> types) {
@@ -83,10 +75,10 @@ public class SchemaBuilder {
 			builder.subscription(subscriptions);
 		}
 
-		diretives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
+		directives.getSchemaDirective().forEach(directive -> builder.additionalDirective(directive));
 
 		for (var schema : schemaConfiguration) {
-			this.diretives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
+			this.directives.addSchemaDirective(schema, schema, builder::withSchemaAppliedDirective);
 		}
 		return builder;
 	}
@@ -139,7 +131,8 @@ public class SchemaBuilder {
 
 				Set<Class<? extends SchemaConfiguration>> schemaConfiguration = reflections.getSubTypesOf(SchemaConfiguration.class);
 
-				Set<Class<?>> dierctivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
+				Set<Class<?>> directivesTypes = reflections.getTypesAnnotatedWith(Directive.class);
+				directivesTypes.addAll(reflections.getTypesAnnotatedWith(DataFetcherWrapper.class));
 
 				Set<Class<?>> restrict = reflections.getTypesAnnotatedWith(Restrict.class);
 				Set<Class<?>> restricts = reflections.getTypesAnnotatedWith(Restricts.class);
@@ -172,7 +165,7 @@ public class SchemaBuilder {
 					}
 				}
 
-				DirectivesSchema diretivesSchema = DirectivesSchema.build(globalRestricts, dierctivesTypes);
+				DirectivesSchema directivesSchema = DirectivesSchema.build(globalRestricts, directivesTypes); // Entry point for directives
 
 				Set<Class<?>> types = reflections.getTypesAnnotatedWith(Entity.class);
 
@@ -187,7 +180,7 @@ public class SchemaBuilder {
 				types.removeIf(t -> t.getDeclaredAnnotation(Entity.class) == null);
 				types.removeIf(t -> t.isAnonymousClass());
 
-				return new SchemaBuilder(dataFetcherRunner, scalars, diretivesSchema, authorizer)
+				return new SchemaBuilder(dataFetcherRunner, scalars, directivesSchema, authorizer)
 					.processTypes(types)
 					.process(endPoints)
 					.build(schemaConfiguration);

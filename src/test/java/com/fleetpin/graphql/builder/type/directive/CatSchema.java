@@ -13,5 +13,5 @@ package com.fleetpin.graphql.builder.type.directive;
 
 import com.fleetpin.graphql.builder.SchemaConfiguration;
 
-@Capture("top")
+@Capture(color = "top")
 public class CatSchema implements SchemaConfiguration {}
