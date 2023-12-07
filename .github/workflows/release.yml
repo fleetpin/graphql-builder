@@ -41,4 +41,4 @@ jobs:
         version-major: ${{ github.event.inputs.releaseType == 'major '}}
         version-minor: ${{ github.event.inputs.releaseType == 'minor '}}
         version-patch: ${{ github.event.inputs.releaseType == 'patch '}}
-        access-token: ${{ secrets.GITHUB_TOKEN }}
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
