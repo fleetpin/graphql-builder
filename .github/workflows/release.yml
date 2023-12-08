@@ -25,6 +25,8 @@ jobs:
         java-version: 11
     - name: Release
       uses: qcastel/github-actions-maven-release@v1.12.41
+      env:
+       JAVA_HOME: /usr/lib/jvm/java-11-openjdk/
       with:
         release-branch-name: "master"
         maven-args: "-P sonatype"
