@@ -40,7 +40,7 @@ jobs:
         maven-repo-server-id: sonatype
         maven-repo-server-username: ${{ secrets.MVN_REPO_PRIVATE_REPO_USER }}
         maven-repo-server-password: ${{ secrets.MVN_REPO_PRIVATE_REPO_PASSWORD }}
-        version-major: ${{ github.event.inputs.releaseType == 'major '}}
-        version-minor: ${{ github.event.inputs.releaseType == 'minor '}}
-        version-patch: ${{ github.event.inputs.releaseType == 'patch '}}
+        version-major: ${{ github.event.inputs.releaseType == 'major'}}
+        version-minor: ${{ github.event.inputs.releaseType == 'minor'}}
+        version-patch: ${{ github.event.inputs.releaseType == 'patch'}}
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
