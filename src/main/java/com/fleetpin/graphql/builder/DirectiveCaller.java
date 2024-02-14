@@ -9,15 +9,12 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder;
-
-import java.lang.annotation.Annotation;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import java.lang.annotation.Annotation;
 
-public interface DirectiveCaller<T extends Annotation> extends DirectiveOperation<T>{
+public interface DirectiveCaller<T extends Annotation> extends DirectiveOperation<T> {
 	public Object process(T annotation, DataFetchingEnvironment env, DataFetcher<?> fetcher) throws Exception;
-
 }

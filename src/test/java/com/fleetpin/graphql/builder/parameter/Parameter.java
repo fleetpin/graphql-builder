@@ -9,16 +9,20 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder.parameter;
 
+import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.Id;
+import com.fleetpin.graphql.builder.annotations.Query;
 import java.util.List;
 import java.util.Optional;
 
-import com.fleetpin.graphql.builder.annotations.Id;
-import com.fleetpin.graphql.builder.annotations.Query;
-
+@Entity
 public class Parameter {
+
+	public Optional<String> getNullOptional() {
+		return null;
+	}
 
 	@Query
 	public static String requiredString(String type) {
@@ -43,7 +47,17 @@ public class Parameter {
 	}
 
 	@Query
+	public static Parameter optionalIdNull() {
+		return new Parameter();
+	}
+
+	@Query
 	public static List<String> requiredListString(List<String> type) {
+		return type;
+	}
+
+	@Query
+	public static String[] requiredArrayString(String[] type) {
 		return type;
 	}
 
@@ -85,20 +99,19 @@ public class Parameter {
 	public static Optional<List<Optional<String>>> optionalListOptionalId(@Id Optional<List<Optional<String>>> type) {
 		return type;
 	}
-	
+
 	@Query
 	public static String multipleArguments(String first, String second) {
 		return first + ":" + second;
 	}
-	
+
 	@Query
 	public static String multipleArgumentsOptional(Optional<String> first, Optional<String> second) {
 		return first.orElse("") + ":" + second.orElse("");
 	}
-	
+
 	@Query
 	public static String multipleArgumentsMix(String first, Optional<String> second) {
 		return first + ":" + second.orElse("");
 	}
-
 }

@@ -9,20 +9,17 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder.annotations;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import graphql.schema.Coercing;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
-import graphql.schema.Coercing;
 
 @Retention(RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Scalar {
 	Class<? extends Coercing<?, ?>> value();
-
 }

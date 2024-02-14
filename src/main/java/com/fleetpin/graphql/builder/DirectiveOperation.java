@@ -9,19 +9,15 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder;
 
 import java.lang.annotation.Annotation;
 
-
 /**
- * Implementations are either 
+ * Implementations are either
  * DirectiveOperator is used to wrap a method call and modify it. Can be used for things like restrictions
  * SchemaDirective is used to add directive information to the graphql schema
- * 
+ *
  *
  */
-public interface DirectiveOperation<T extends Annotation> {
-
-}
+public interface DirectiveOperation<T extends Annotation> {}

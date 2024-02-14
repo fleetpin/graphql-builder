@@ -9,22 +9,11 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
+package com.fleetpin.graphql.builder.mapper;
 
-package com.fleetpin.graphql.builder;
+import graphql.GraphQLContext;
+import java.util.Locale;
 
-import java.lang.annotation.Annotation;
-import java.util.List;
-
-import graphql.introspection.Introspection.DirectiveLocation;
-
-public interface SDLDirective<T extends Annotation, K> extends DirectiveOperation<T>{
-	
-	public List<DirectiveLocation> validLocations();
-	
-	public K build(T annotation, Class<?> location);
-
-	public default boolean repeatable() {
-		return false;
-	}
-
+public interface InputTypeBuilder {
+	Object convert(Object obj, GraphQLContext graphQLContext, Locale locale);
 }

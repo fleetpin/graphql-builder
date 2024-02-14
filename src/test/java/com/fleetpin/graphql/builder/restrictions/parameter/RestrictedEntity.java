@@ -9,17 +9,15 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder.restrictions.parameter;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.fleetpin.graphql.builder.annotations.Entity;
 import com.fleetpin.graphql.builder.annotations.Query;
 import com.fleetpin.graphql.builder.annotations.Restrict;
 import com.fleetpin.graphql.builder.restrictions.EntityRestrictions;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Entity
 @Restrict(EntityRestrictions.class)
@@ -35,14 +33,13 @@ public class RestrictedEntity {
 		this.allowed = allowed;
 	}
 
-	
 	@Query
 	public static RestrictedEntity single(Boolean allowed) {
 		RestrictedEntity entity = new RestrictedEntity();
 		entity.setAllowed(allowed);
 		return entity;
 	}
-	
+
 	@Query
 	public static Optional<RestrictedEntity> singleOptional(Optional<Boolean> allowed) {
 		if (allowed.isEmpty()) return Optional.empty();
@@ -50,25 +47,33 @@ public class RestrictedEntity {
 		entity.setAllowed(allowed.get());
 		return Optional.of(entity);
 	}
-	
+
 	@Query
 	public static List<RestrictedEntity> list(List<Boolean> allowed) {
-		return allowed.stream().map(isAllowed -> {
-			RestrictedEntity entity = new RestrictedEntity();
-			entity.setAllowed(isAllowed);
-			return entity; 
-		}).collect(Collectors.toList());
+		return allowed
+			.stream()
+			.map(isAllowed -> {
+				RestrictedEntity entity = new RestrictedEntity();
+				entity.setAllowed(isAllowed);
+				return entity;
+			})
+			.collect(Collectors.toList());
 	}
-	
+
 	@Query
 	public static Optional<List<RestrictedEntity>> listOptional(Optional<List<Boolean>> allowed) {
 		if (allowed.isEmpty()) return Optional.empty();
-		
-		return Optional.of(allowed.get().stream().map(isAllowed -> {
-			RestrictedEntity entity = new RestrictedEntity();
-			entity.setAllowed(isAllowed);
-			return entity;
-		}).collect(Collectors.toList()));
+
+		return Optional.of(
+			allowed
+				.get()
+				.stream()
+				.map(isAllowed -> {
+					RestrictedEntity entity = new RestrictedEntity();
+					entity.setAllowed(isAllowed);
+					return entity;
+				})
+				.collect(Collectors.toList())
+		);
 	}
-	
 }

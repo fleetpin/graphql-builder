@@ -9,22 +9,20 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder;
 
+import graphql.schema.DataFetchingEnvironment;
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;
-
-import graphql.schema.DataFetchingEnvironment;
 
 public interface RestrictTypeFactory<T> {
 	public CompletableFuture<RestrictType<T>> create(DataFetchingEnvironment context);
 
 	default Class<T> extractType() {
-		for(var inter: getClass().getGenericInterfaces()) {
-			if(inter instanceof ParameterizedType) {
+		for (var inter : getClass().getGenericInterfaces()) {
+			if (inter instanceof ParameterizedType) {
 				var param = (ParameterizedType) inter;
-				if(RestrictTypeFactory.class.equals(param.getRawType())) {
+				if (RestrictTypeFactory.class.equals(param.getRawType())) {
 					return (Class<T>) param.getActualTypeArguments()[0];
 				}
 			}

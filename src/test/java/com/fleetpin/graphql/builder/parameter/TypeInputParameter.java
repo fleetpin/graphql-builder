@@ -9,20 +9,28 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder.parameter;
 
+import com.fleetpin.graphql.builder.annotations.Entity;
+import com.fleetpin.graphql.builder.annotations.GraphQLDescription;
+import com.fleetpin.graphql.builder.annotations.Query;
+import com.fleetpin.graphql.builder.annotations.SchemaOption;
 import java.util.List;
 import java.util.Optional;
 
-import com.fleetpin.graphql.builder.annotations.Entity;
-import com.fleetpin.graphql.builder.annotations.Query;
-import com.fleetpin.graphql.builder.annotations.SchemaOption;
-
 public class TypeInputParameter {
+
+	@Entity
+	@GraphQLDescription("enum desc")
+	public enum AnimalType {
+		@GraphQLDescription("A cat")
+		CAT,
+		DOG,
+	}
 
 	@Entity(SchemaOption.BOTH)
 	public static class InputTest {
+
 		private String value;
 
 		public String getValue() {
@@ -32,6 +40,11 @@ public class TypeInputParameter {
 		public void setValue(String value) {
 			this.value = value;
 		}
+	}
+
+	@Query
+	public static AnimalType enumTest(AnimalType type) {
+		return type;
 	}
 
 	@Query
@@ -69,10 +82,8 @@ public class TypeInputParameter {
 	}
 
 	@Query
-	public static Optional<List<Optional<InputTest>>> optionalListOptionalType(
-			Optional<List<Optional<InputTest>>> type) {
+	public static Optional<List<Optional<InputTest>>> optionalListOptionalType(Optional<List<Optional<InputTest>>> type) {
 		type.map(tt -> tt.stream().map(t -> t.map(InputTest::getValue)));
 		return type;
 	}
-
 }

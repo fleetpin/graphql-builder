@@ -9,7 +9,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package com.fleetpin.graphql.builder.annotations;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -19,7 +18,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 @Retention(RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD, ElementType.PARAMETER })
 public @interface GraphQLDescription {
 	public String value();
 }

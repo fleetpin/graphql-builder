@@ -1,16 +1,33 @@
+<!--
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+    in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the License
+    is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+    or implied. See the License for the specific language governing permissions and limitations under
+    the License.
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.fleetpin</groupId>
 	<artifactId>graphql-builder</artifactId>
-	<version>1.0.2-SNAPSHOT</version>
+	<version>3.0.0-SNAPSHOT</version>
 
 	<name>GraphQL Builder</name>
 	<description>Builds a graphql schema from a model using reflection</description>
-	<url>https://github.com/fleetpin/graphql-builder</url>
+	<url>https://github.com/ashley-taylor/graphql-builder</url>
 
 	<properties>
-		<junit.jupiter.version>5.6.0</junit.jupiter.version>
+		<junit.jupiter.version>5.10.0</junit.jupiter.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<jackson.version>2.15.2</jackson.version>
+		<pitest.version>1.9.0</pitest.version>
+		<pitest-junit5-plugin.version>1.0.0</pitest-junit5-plugin.version>
+		<graphql.version>21.1</graphql.version>
 	</properties>
 
 	<distributionManagement>
@@ -27,9 +44,9 @@
 	</distributionManagement>
 
 	<scm>
-		<url>https://github.com/fleetpin/graphql-builder</url>
-		<connection>scm:git:https://github.com/fleetpin/graphql-builder.git</connection>
-		<developerConnection>scm:git:https://github.com/fleetpin/graphql-builder.git</developerConnection>
+		<url>https://github.com/ashley-taylor/graphql-builder</url>
+		<connection>scm:git:https://github.com/ashley-taylor/graphql-builder.git</connection>
+		<developerConnection>scm:git:https://github.com/ashley-taylor/graphql-builder.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -66,46 +83,136 @@
 				<artifactId>maven-release-plugin</artifactId>
 				<version>2.5.3</version>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.1.1</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.hubspot.maven.plugins</groupId>
+				<artifactId>prettier-maven-plugin</artifactId>
+				<version>0.15</version>
+				<configuration>
+					<prettierJavaVersion>1.4.0</prettierJavaVersion>
+					<printWidth>160</printWidth>
+					<tabWidth>4</tabWidth>
+					<useTabs>true</useTabs>
+					<ignoreConfigFile>true</ignoreConfigFile>
+					<ignoreEditorConfig>true</ignoreEditorConfig>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.pitest</groupId>
+				<artifactId>pitest-maven</artifactId>
+				<version>${pitest.version}</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-junit5-plugin</artifactId>
+						<version>${pitest-junit5-plugin.version}</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<threads>4</threads>
+					<timestampedReports>false</timestampedReports>
+					<failWhenNoMutations>false</failWhenNoMutations>
+					<mutators>
+						<mutator>STRONGER</mutator>
+					</mutators>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>4.1</version>
+				<configuration>
+					<licenseSets>
+						<licenseSet>
+							<header>src/license/license.txt</header>
+						</licenseSet>
+					</licenseSets>
+				</configuration>
+			</plugin>
+
 		</plugins>
 	</build>
 
 	<dependencies>
 		<dependency>
-		    <groupId>com.graphql-java</groupId>
-	    	<artifactId>graphql-java</artifactId>
-		    <version>18.1</version>
+			<groupId>com.graphql-java</groupId>
+			<artifactId>graphql-java</artifactId>
+			<version>${graphql.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.graphql-java</groupId>
+			<artifactId>graphql-java-extended-scalars</artifactId>
+			<version>21.0</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.reflections</groupId>
 			<artifactId>reflections</artifactId>
-			<version>0.9.11</version>
+			<version>0.10.2</version>
+		</dependency>
+		<dependency>
+		    <groupId>jakarta.annotation</groupId>
+    		<artifactId>jakarta.annotation-api</artifactId>
+    		<version>2.1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.12.6.1</version>
+			<version>${jackson.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.module</groupId>
 			<artifactId>jackson-module-parameter-names</artifactId>
-			<version>2.10.1</version>
-
+			<version>${jackson.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jdk8</artifactId>
-			<version>2.10.1</version>
-
+			<version>${jackson.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
-			<version>2.10.1</version>
+			<version>${jackson.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.reactivex.rxjava3</groupId>
 			<artifactId>rxjava</artifactId>
-			<version>3.0.0-RC7</version>
+			<version>3.1.6</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -122,31 +229,6 @@
 			<id>sonatype</id>
 			<build>
 				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-source-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>attach-sources</id>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.1.1</version>
-						<executions>
-							<execution>
-								<id>attach-javadocs</id>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
